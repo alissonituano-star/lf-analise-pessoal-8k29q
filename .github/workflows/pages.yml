@@ -29,6 +29,7 @@ jobs:
           node-version: 22
 
       - name: Atualizar resultados
+        continue-on-error: true
         run: npm run update
 
       - name: Salvar base atualizada

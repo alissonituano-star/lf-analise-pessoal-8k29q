@@ -4,48 +4,69 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gerador Lotofacil</title>
+    <meta name="theme-color" content="#176b4d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Lotofacil">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="app-header">
-      <div>
-        <p class="eyebrow">Analise historica</p>
-        <h1>Gerador Lotofacil</h1>
+      <div class="brand-lockup">
+        <img src="assets/icon.svg" alt="" class="app-logo" width="44" height="44">
+        <div>
+          <p class="eyebrow">Analise historica</p>
+          <h1>Gerador Lotofacil</h1>
+        </div>
       </div>
-      <div class="status" id="status">Carregando dados...</div>
+      <div class="header-actions">
+        <button class="install-button" id="installApp" hidden>Instalar</button>
+        <div class="status" id="status">Carregando dados...</div>
+      </div>
     </header>
 
     <main class="layout">
+      <section class="mobile-hero">
+        <p class="kicker">Uso rapido</p>
+        <h2>Gere jogos equilibrados e veja o que cada numero esta fazendo.</h2>
+        <button class="install-button full" id="installAppMobile" hidden>Instalar no celular</button>
+      </section>
+
       <section class="panel controls">
         <h2>Configurar jogos</h2>
-        <label>
-          Quantidade de jogos
-          <input id="gameCount" type="number" min="1" max="100" value="4">
-        </label>
-        <label>
-          Concursos recentes
-          <input id="recentWindow" type="number" min="10" max="500" value="120">
-        </label>
-        <label>
-          Numeros por jogo
-          <select id="gameSize">
-            <option value="15">15 numeros</option>
-            <option value="16">16 numeros</option>
-            <option value="17">17 numeros</option>
-            <option value="18">18 numeros</option>
-            <option value="19">19 numeros</option>
-            <option value="20">20 numeros</option>
-          </select>
-        </label>
-        <label>
-          Perfil
-          <select id="strategy">
-            <option value="balanced">Equilibrado</option>
-            <option value="hot">Mais sorteados</option>
-            <option value="overdue">Mais atrasados</option>
-            <option value="mixed">Misto agressivo</option>
-          </select>
-        </label>
+        <div class="control-grid">
+          <label>
+            Quantidade
+            <input id="gameCount" type="number" min="1" max="100" value="4">
+          </label>
+          <label>
+            Janela recente
+            <input id="recentWindow" type="number" min="10" max="500" value="120">
+          </label>
+          <label>
+            Numeros
+            <select id="gameSize">
+              <option value="15">15 numeros</option>
+              <option value="16">16 numeros</option>
+              <option value="17">17 numeros</option>
+              <option value="18">18 numeros</option>
+              <option value="19">19 numeros</option>
+              <option value="20">20 numeros</option>
+            </select>
+          </label>
+          <label>
+            Perfil
+            <select id="strategy">
+              <option value="balanced">Equilibrado</option>
+              <option value="hot">Mais sorteados</option>
+              <option value="overdue">Mais atrasados</option>
+              <option value="mixed">Misto agressivo</option>
+            </select>
+          </label>
+        </div>
         <button id="generate">Gerar jogos</button>
         <p class="note">A recomendacao pratica para quem joga 4 apostas por dia e gerar 4 jogos unicos, equilibrados e sem repetir combinacoes entre si.</p>
       </section>
@@ -71,7 +92,7 @@
             <p class="kicker">Sugestao principal</p>
             <h2>Jogos sugeridos</h2>
           </div>
-          <button class="ghost" id="copyGames">Copiar</button>
+          <button class="ghost action-button" id="copyGames">Copiar</button>
         </div>
         <p class="helper">Os jogos sao ranqueados por equilibrio: frequencia, atraso, soma, pares e distribuicao no volante.</p>
         <div id="games" class="games"></div>
@@ -97,7 +118,7 @@
             <p class="kicker">Leitura numero a numero</p>
             <h2>Ranking dos numeros</h2>
           </div>
-          <button class="ghost" id="downloadCsv">CSV</button>
+          <button class="ghost action-button" id="downloadCsv">CSV</button>
         </div>
         <p class="helper">Ordenado pela pontuacao combinada. Compare percentual historico, presenca recente e atraso atual.</p>
         <div id="numberRanking" class="number-grid"></div>
@@ -126,6 +147,7 @@
       </section>
     </main>
 
+    <div class="toast" id="toast" hidden></div>
     <script src="app.js"></script>
   </body>
 </html>

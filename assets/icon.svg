@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lotofacil">
+  <rect width="512" height="512" rx="108" fill="#176b4d"/>
+  <circle cx="256" cy="256" r="168" fill="#f7faf8"/>
+  <circle cx="256" cy="256" r="122" fill="#d79922"/>
+  <circle cx="256" cy="256" r="78" fill="#176b4d"/>
+  <text x="256" y="283" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" fill="#fff">15</text>
+</svg>

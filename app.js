@@ -3,9 +3,11 @@ const state = {
   data: null,
   analysis: null,
   games: [],
+  installPrompt: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
+const installButtons = () => [$("#installApp"), $("#installAppMobile")].filter(Boolean);
 
 function formatNumber(value) {
   return String(value).padStart(2, "0");
@@ -285,9 +287,76 @@ async function copyGames() {
     .join("\n");
   await navigator.clipboard.writeText(text);
   $("#copyGames").textContent = "Copiado";
+  showToast("Jogos copiados.");
   setTimeout(() => {
     $("#copyGames").textContent = "Copiar";
   }, 1500);
+}
+
+function showToast(message) {
+  const toast = $("#toast");
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => {
+    toast.hidden = true;
+  }, 4200);
+}
+
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+}
+
+function updateInstallButtons(visible) {
+  installButtons().forEach((button) => {
+    button.hidden = !visible;
+  });
+}
+
+async function installApp() {
+  if (state.installPrompt) {
+    state.installPrompt.prompt();
+    const choice = await state.installPrompt.userChoice;
+    state.installPrompt = null;
+    updateInstallButtons(false);
+    if (choice.outcome === "accepted") showToast("App instalado.");
+    return;
+  }
+
+  if (isIos()) {
+    showToast("No iPhone, toque em Compartilhar e depois em Adicionar a Tela de Inicio.");
+    return;
+  }
+
+  showToast("Se o botao de instalar nao aparecer, abra pelo Chrome e aguarde alguns segundos.");
+}
+
+function setupPwa() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {
+      showToast("Nao consegui ativar o modo offline agora.");
+    });
+  }
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    state.installPrompt = event;
+    updateInstallButtons(!isStandalone());
+  });
+
+  window.addEventListener("appinstalled", () => {
+    state.installPrompt = null;
+    updateInstallButtons(false);
+    showToast("Instalado na tela inicial.");
+  });
+
+  if (isIos() && !isStandalone()) {
+    updateInstallButtons(true);
+  }
 }
 
 function refreshAnalysis() {
@@ -315,5 +384,7 @@ $("#strategy").addEventListener("change", generateGames);
 $("#gameSize").addEventListener("change", generateGames);
 $("#downloadCsv").addEventListener("click", downloadCsv);
 $("#copyGames").addEventListener("click", copyGames);
+installButtons().forEach((button) => button.addEventListener("click", installApp));
 
+setupPwa();
 init();

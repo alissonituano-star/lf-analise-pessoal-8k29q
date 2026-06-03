@@ -33,7 +33,16 @@ http://192.168.1.6:8001
 
 4. Abra esse endereco no navegador do celular.
 
-Se o celular nao abrir, o Windows pode estar bloqueando a porta `8000` no firewall. Nesse caso, permita o acesso do Node.js na rede privada.
+Se o celular nao abrir, o Windows pode estar bloqueando a porta `8001` no firewall. Nesse caso, permita o acesso do Node.js na rede privada.
+
+## Instalar na tela do celular
+
+Depois que o site estiver aberto no celular:
+
+- Android/Chrome: toque em `Instalar` quando o botao aparecer, ou abra o menu do Chrome e toque em `Adicionar a tela inicial`.
+- iPhone/Safari: toque em compartilhar e depois em `Adicionar a Tela de Inicio`.
+
+O app tambem tem cache offline. Se a internet cair, ele tenta abrir com a ultima base carregada.
 
 Para atualizar sem abrir o sistema:
 

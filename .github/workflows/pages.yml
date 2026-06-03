@@ -1,0 +1,59 @@
+name: Publicar sistema
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  atualizar-dados:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Atualizar resultados
+        run: npm run update
+
+      - name: Salvar base atualizada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/lotofacil.json
+          git diff --cached --quiet || git commit -m "Atualiza resultados da Lotofacil"
+          git push
+
+      - name: Preparar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar arquivos estaticos
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  publicar:
+    needs: atualizar-dados
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gerador Lotofacil</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Analise historica</p>
+        <h1>Gerador Lotofacil</h1>
+      </div>
+      <div class="status" id="status">Carregando dados...</div>
+    </header>
+
+    <main class="layout">
+      <section class="panel controls">
+        <h2>Configurar jogos</h2>
+        <label>
+          Quantidade de jogos
+          <input id="gameCount" type="number" min="1" max="100" value="4">
+        </label>
+        <label>
+          Concursos recentes
+          <input id="recentWindow" type="number" min="10" max="500" value="120">
+        </label>
+        <label>
+          Numeros por jogo
+          <select id="gameSize">
+            <option value="15">15 numeros</option>
+            <option value="16">16 numeros</option>
+            <option value="17">17 numeros</option>
+            <option value="18">18 numeros</option>
+            <option value="19">19 numeros</option>
+            <option value="20">20 numeros</option>
+          </select>
+        </label>
+        <label>
+          Perfil
+          <select id="strategy">
+            <option value="balanced">Equilibrado</option>
+            <option value="hot">Mais sorteados</option>
+            <option value="overdue">Mais atrasados</option>
+            <option value="mixed">Misto agressivo</option>
+          </select>
+        </label>
+        <button id="generate">Gerar jogos</button>
+        <p class="note">A recomendacao pratica para quem joga 4 apostas por dia e gerar 4 jogos unicos, equilibrados e sem repetir combinacoes entre si.</p>
+      </section>
+
+      <section class="panel summary">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Base historica</p>
+            <h2>Resumo dos dados</h2>
+          </div>
+        </div>
+        <div class="metrics">
+          <div><span id="metricContests">-</span><small>concursos</small></div>
+          <div><span id="metricLatest">-</span><small>ultimo concurso</small></div>
+          <div><span id="metricAvgSum">-</span><small>soma media</small></div>
+          <div><span id="metricRange">-</span><small>periodo</small></div>
+        </div>
+      </section>
+
+      <section class="panel wide">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Sugestao principal</p>
+            <h2>Jogos sugeridos</h2>
+          </div>
+          <button class="ghost" id="copyGames">Copiar</button>
+        </div>
+        <p class="helper">Os jogos sao ranqueados por equilibrio: frequencia, atraso, soma, pares e distribuicao no volante.</p>
+        <div id="games" class="games"></div>
+      </section>
+
+      <section class="panel advice">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Estrategia</p>
+            <h2>4 jogos por dia</h2>
+          </div>
+        </div>
+        <div class="advice-body">
+          <strong>Matematicamente, tanto faz trocar ou manter os mesmos 4 jogos.</strong>
+          <p>Cada sorteio e independente. Se voce joga 4 combinacoes diferentes de 15 numeros, sua chance para 15 acertos em um concurso e de 4 em 3.268.760, ou cerca de 1 em 817.190.</p>
+          <p>Na pratica, eu recomendo gerar 4 jogos novos todos os dias, mas sem achar que isso aumenta a probabilidade pura. A vantagem e diversificar combinacoes, usar a base atualizada e evitar ficar preso em um jogo ruim de distribuicao.</p>
+        </div>
+      </section>
+
+      <section class="panel wide">
+        <div class="section-title">
+          <div>
+            <p class="kicker">Leitura numero a numero</p>
+            <h2>Ranking dos numeros</h2>
+          </div>
+          <button class="ghost" id="downloadCsv">CSV</button>
+        </div>
+        <p class="helper">Ordenado pela pontuacao combinada. Compare percentual historico, presenca recente e atraso atual.</p>
+        <div id="numberRanking" class="number-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Combinacoes</p>
+            <h2>Pares fortes</h2>
+          </div>
+        </div>
+        <p class="helper">Pares que mais apareceram juntos no historico.</p>
+        <div id="pairRanking" class="pair-list"></div>
+      </section>
+
+      <section class="panel wide">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Teste historico</p>
+            <h2>Backtest</h2>
+          </div>
+        </div>
+        <p class="helper">Compara os jogos sugeridos contra os ultimos concursos. Serve para avaliar a estrategia, nao para prever o proximo resultado.</p>
+        <div id="backtest" class="backtest"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

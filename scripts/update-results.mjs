@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -109,6 +109,17 @@ async function update(maxPages) {
     oldest_contest: results.at(-1).contest,
     results,
   };
+
+  try {
+    const current = JSON.parse(await readFile(OUTPUT, "utf8"));
+    const currentComparable = { ...current, updated_at: null };
+    const nextComparable = { ...payload, updated_at: null };
+    if (JSON.stringify(currentComparable) === JSON.stringify(nextComparable)) {
+      payload.updated_at = current.updated_at;
+    }
+  } catch {
+    // Arquivo ainda nao existe ou esta invalido; segue criando uma base nova.
+  }
 
   await mkdir(dirname(OUTPUT), { recursive: true });
   await writeFile(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`, "utf8");

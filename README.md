@@ -56,6 +56,14 @@ Para atualizar, salvar no Git e enviar para o GitHub:
 npm run sync
 ```
 
+Se voce perdeu o horario automatico, force manualmente com:
+
+```powershell
+npm run force
+```
+
+No modo local (`npm run dev` ou `npm run mobile`), a tela tambem tem o botao `Atualizar`, que baixa os resultados na hora e mostra a data da ultima atualizacao.
+
 Se preferir Python e ele estiver instalado, o script equivalente fica em `scripts/update_results.py`.
 
 ## Rodar online pelo GitHub Pages

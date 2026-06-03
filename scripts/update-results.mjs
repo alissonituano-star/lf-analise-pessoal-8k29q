@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const BASE_URL = "https://lotorama.com.br/lotofacil/todos-os-resultados/";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -86,7 +86,7 @@ function dedupe(contests) {
   return [...byContest.values()].sort((a, b) => b.contest - a.contest);
 }
 
-async function update(maxPages) {
+export async function update(maxPages) {
   const firstHtml = await fetchPage(BASE_URL);
   let totalPages = extractTotalPages(firstHtml);
   if (maxPages) totalPages = Math.min(totalPages, maxPages);
@@ -126,15 +126,17 @@ async function update(maxPages) {
   return payload;
 }
 
-const maxPagesArg = process.argv.find((arg) => arg.startsWith("--max-pages="));
-const maxPages = maxPagesArg ? Number(maxPagesArg.split("=")[1]) : null;
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const maxPagesArg = process.argv.find((arg) => arg.startsWith("--max-pages="));
+  const maxPages = maxPagesArg ? Number(maxPagesArg.split("=")[1]) : null;
 
-try {
-  const payload = await update(maxPages);
-  console.log(
-    `OK: ${payload.total_contests} concursos salvos em ${OUTPUT} (${payload.oldest_contest} a ${payload.latest_contest}).`,
-  );
-} catch (error) {
-  console.error(`Erro ao atualizar resultados: ${error.message}`);
-  process.exitCode = 1;
+  try {
+    const payload = await update(maxPages);
+    console.log(
+      `OK: ${payload.total_contests} concursos salvos em ${OUTPUT} (${payload.oldest_contest} a ${payload.latest_contest}).`,
+    );
+  } catch (error) {
+    console.error(`Erro ao atualizar resultados: ${error.message}`);
+    process.exitCode = 1;
+  }
 }

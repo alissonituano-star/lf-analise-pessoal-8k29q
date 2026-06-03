@@ -155,6 +155,11 @@ button:hover {
   background: var(--brand-dark);
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .install-button {
   width: auto;
   min-height: 36px;
@@ -243,6 +248,28 @@ button:hover {
 .metrics small {
   display: block;
   margin-top: 4px;
+  color: var(--muted);
+}
+
+.update-info {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfb;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.update-info span {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.update-info small {
   color: var(--muted);
 }
 
@@ -608,6 +635,11 @@ button:hover {
   }
 
   .metrics small {
+    font-size: 12px;
+  }
+
+  .update-info {
+    padding: 10px;
     font-size: 12px;
   }
 

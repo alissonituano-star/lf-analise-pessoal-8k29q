@@ -6,6 +6,7 @@
   "scripts": {
     "update": "node scripts/update-results.mjs",
     "sync": "node scripts/update-and-push.mjs",
+    "force": "node scripts/update-and-push.mjs",
     "serve": "node scripts/serve.mjs",
     "dev": "node scripts/start.mjs",
     "mobile": "node scripts/start.mjs --host=0.0.0.0 --port=8001"

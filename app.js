@@ -17,6 +17,23 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
 }
 
+function formatUpdatedAt(value) {
+  if (!value) return "sem registro";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+function isLocalServer() {
+  return ["localhost", "127.0.0.1", "192.168.1.6"].includes(window.location.hostname)
+    || window.location.hostname.startsWith("192.168.")
+    || window.location.hostname.startsWith("10.")
+    || window.location.hostname.startsWith("172.");
+}
+
 function combinations(items, size) {
   const output = [];
   const walk = (start, combo) => {
@@ -187,7 +204,11 @@ function renderSummary() {
   $("#metricLatest").textContent = data.latest_contest || results[0].contest;
   $("#metricAvgSum").textContent = Math.round(state.analysis.avgSum);
   $("#metricRange").textContent = `${results.at(-1).date} - ${results[0].date}`;
-  $("#status").textContent = `Base: ${results.length} concursos. Fonte: ${data.source}`;
+  $("#metricUpdated").textContent = `Atualizado em: ${formatUpdatedAt(data.updated_at)}`;
+  $("#updateMode").textContent = isLocalServer()
+    ? "Neste modo, o botao Atualizar baixa os resultados agora."
+    : "Online: use npm run sync no computador para atualizar e enviar ao GitHub.";
+  $("#status").textContent = `Base: ${results.length} concursos. Atualizado: ${formatUpdatedAt(data.updated_at)}`;
 }
 
 function renderRanking() {
@@ -293,6 +314,36 @@ async function copyGames() {
   }, 1500);
 }
 
+async function loadData() {
+  const response = await fetch(`data/lotofacil.json?v=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Nao foi possivel carregar data/lotofacil.json");
+  state.data = await response.json();
+  refreshAnalysis();
+}
+
+async function forceUpdate() {
+  const button = $("#forceUpdate");
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Atualizando...";
+
+  try {
+    const response = await fetch("/api/update", { method: "POST" });
+    if (!response.ok) {
+      throw new Error("Atualizacao direta indisponivel neste ambiente.");
+    }
+    const payload = await response.json();
+    if (!payload.ok) throw new Error(payload.message || "Nao foi possivel atualizar.");
+    await loadData();
+    showToast("Base atualizada agora.");
+  } catch (error) {
+    showToast("Para forcar no online, rode no computador: npm run sync");
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
 function showToast(message) {
   const toast = $("#toast");
   toast.textContent = message;
@@ -369,10 +420,7 @@ function refreshAnalysis() {
 
 async function init() {
   try {
-    const response = await fetch("data/lotofacil.json", { cache: "no-store" });
-    if (!response.ok) throw new Error("Nao foi possivel carregar data/lotofacil.json");
-    state.data = await response.json();
-    refreshAnalysis();
+    await loadData();
   } catch (error) {
     $("#status").textContent = error.message;
   }
@@ -384,6 +432,7 @@ $("#strategy").addEventListener("change", generateGames);
 $("#gameSize").addEventListener("change", generateGames);
 $("#downloadCsv").addEventListener("click", downloadCsv);
 $("#copyGames").addEventListener("click", copyGames);
+$("#forceUpdate").addEventListener("click", forceUpdate);
 installButtons().forEach((button) => button.addEventListener("click", installApp));
 
 setupPwa();

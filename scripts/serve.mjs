@@ -3,6 +3,7 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { networkInterfaces } from "node:os";
 import { extname, join, normalize, resolve } from "node:path";
+import { update } from "./update-results.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const hostArg = process.argv.find((arg) => arg.startsWith("--host="));
@@ -35,6 +36,23 @@ function localAddresses() {
 }
 
 createServer(async (request, response) => {
+  if (request.url === "/api/update" && request.method === "POST") {
+    try {
+      const payload = await update();
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({
+        ok: true,
+        message: `Base atualizada: ${payload.oldest_contest} a ${payload.latest_contest}.`,
+        updated_at: payload.updated_at,
+        total_contests: payload.total_contests,
+      }));
+    } catch (error) {
+      response.writeHead(500, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ ok: false, message: error.message }));
+    }
+    return;
+  }
+
   const filePath = resolvePath(request.url || "/");
   if (!filePath || !existsSync(filePath)) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });

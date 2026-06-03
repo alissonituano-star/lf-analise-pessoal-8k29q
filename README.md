@@ -41,6 +41,12 @@ Para atualizar sem abrir o sistema:
 npm run update
 ```
 
+Para atualizar, salvar no Git e enviar para o GitHub:
+
+```powershell
+npm run sync
+```
+
 Se preferir Python e ele estiver instalado, o script equivalente fica em `scripts/update_results.py`.
 
 ## Rodar online pelo GitHub Pages
@@ -54,7 +60,15 @@ Depois de subir para um repositorio no GitHub:
 3. Em `Build and deployment`, selecione `GitHub Actions`.
 4. O workflow `Publicar sistema` vai publicar o site.
 
-O workflow tambem tenta atualizar a base todos os dias as 23:00 UTC.
+O workflow tenta atualizar a base todos os dias as 23:00 UTC, mas o Lotorama pode bloquear servidores do GitHub com erro `HTTP 403`.
+
+O metodo mais confiavel para atualizar automaticamente no GitHub e deixar o Windows rodar este arquivo uma vez por dia:
+
+```text
+scripts\sync-github.bat
+```
+
+Ele executa `npm run sync`, que baixa os resultados pelo seu computador, cria commit se a base mudou e envia para o GitHub.
 
 ## O que o sistema analisa
 

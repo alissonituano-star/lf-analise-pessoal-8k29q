@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
+const SERVICE_ROLE_FILE = resolve(ROOT, "supabase-service-role.key");
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log("Uso: npm run sync");
@@ -29,11 +31,29 @@ function hasDataChanges() {
   return status.trim().length > 0;
 }
 
+function loadServiceRoleKey() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+  if (!existsSync(SERVICE_ROLE_FILE)) return;
+  process.env.SUPABASE_SERVICE_ROLE_KEY = readFileSync(SERVICE_ROLE_FILE, "utf8").trim();
+}
+
+function uploadSupabaseResults() {
+  loadServiceRoleKey();
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.log("SUPABASE_SERVICE_ROLE_KEY nao definida. Pulando envio ao Supabase.");
+    return;
+  }
+
+  console.log("Enviando resultados para o Supabase...");
+  run("node", ["scripts/upload-results-supabase.mjs"]);
+}
+
 console.log("Atualizando resultados...");
 run("node", ["scripts/update-results.mjs"]);
+uploadSupabaseResults();
 
 if (!hasDataChanges()) {
-  console.log("Nenhuma mudanca nova nos resultados. Nada para enviar.");
+  console.log("Nenhuma mudanca nova nos resultados para enviar ao GitHub.");
   process.exit(0);
 }
 

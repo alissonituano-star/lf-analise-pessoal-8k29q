@@ -1011,16 +1011,19 @@ async function copyGames() {
 }
 
 async function loadData() {
-  const cloudData = await loadSupabaseResults();
-  if (cloudData) {
-    state.data = cloudData;
+  try {
+    const response = await fetch(`data/lotofacil.json?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error("Nao foi possivel carregar data/lotofacil.json");
+    state.data = await response.json();
     refreshAnalysis();
+    hydrateSupabaseResults();
     return;
+  } catch (error) {
+    const cloudData = await loadSupabaseResults();
+    if (!cloudData) throw error;
+    state.data = cloudData;
   }
 
-  const response = await fetch(`data/lotofacil.json?v=${Date.now()}`, { cache: "no-store" });
-  if (!response.ok) throw new Error("Nao foi possivel carregar data/lotofacil.json");
-  state.data = await response.json();
   refreshAnalysis();
 }
 
@@ -1029,11 +1032,14 @@ async function loadSupabaseResults() {
   const config = supabaseConfig();
   const pageSize = 1000;
   const rows = [];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
     for (let offset = 0; offset < 10000; offset += pageSize) {
-      const url = `${config.url}/rest/v1/${config.resultsTable}?select=contest,weekday,draw_date,numbers&order=contest.desc&limit=${pageSize}&offset=${offset}`;
+      const url = `${config.url}/rest/v1/${config.resultsTable}?select=contest,weekday,draw_date,numbers,source_updated_at&order=contest.desc&limit=${pageSize}&offset=${offset}`;
       const response = await fetch(url, {
+        signal: controller.signal,
         headers: {
           apikey: config.anonKey,
           Authorization: `Bearer ${config.anonKey}`,
@@ -1046,6 +1052,8 @@ async function loadSupabaseResults() {
     }
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!rows.length) return null;
@@ -1058,13 +1066,24 @@ async function loadSupabaseResults() {
 
   return {
     source: "Supabase",
-    updated_at: new Date().toISOString(),
+    updated_at: rows[0]?.source_updated_at || new Date().toISOString(),
     total_pages: null,
     total_contests: results.length,
     latest_contest: results[0].contest,
     oldest_contest: results.at(-1).contest,
     results,
   };
+}
+
+async function hydrateSupabaseResults() {
+  const cloudData = await loadSupabaseResults();
+  if (!cloudData || !state.data) return;
+  const cloudIsNewer = cloudData.latest_contest > (state.data.latest_contest || 0)
+    || cloudData.total_contests > (state.data.total_contests || 0);
+  if (!cloudIsNewer) return;
+  state.data = cloudData;
+  refreshAnalysis();
+  showToast("Base historica atualizada pelo Supabase.");
 }
 
 async function forceUpdate() {

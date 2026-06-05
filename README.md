@@ -85,7 +85,7 @@ O metodo mais confiavel para atualizar automaticamente no GitHub e deixar o Wind
 scripts\sync-github.bat
 ```
 
-Ele executa `npm run sync`, que baixa os resultados pelo seu computador, cria commit se a base mudou e envia para o GitHub.
+Ele executa `npm run sync`, que baixa os resultados pelo seu computador, envia para o Supabase quando a chave estiver configurada, cria commit se a base mudou e envia para o GitHub.
 
 ## O que o sistema analisa
 
@@ -150,6 +150,21 @@ Remove-Item Env:\SUPABASE_SERVICE_ROLE_KEY
 Nao coloque a `service_role` no `supabase-config.js` e nao envie essa chave para o GitHub. Ela serve apenas para o envio local em massa.
 
 Depois do upload, o app tenta carregar os concursos pelo Supabase. Se a tabela estiver vazia ou indisponivel, ele continua usando `data/lotofacil.json`.
+
+Para o agendamento automatico tambem atualizar o Supabase, crie um arquivo local chamado:
+
+```text
+supabase-service-role.key
+```
+
+Cole nele apenas a chave `service_role` ou `secret`. Esse arquivo esta no `.gitignore` e nao deve ir para o GitHub.
+
+Depois disso, sempre que `npm run sync` ou `scripts\sync-github.bat` rodar, o fluxo sera:
+
+1. Baixar novos resultados.
+2. Enviar concursos para o Supabase.
+3. Atualizar `data/lotofacil.json`.
+4. Enviar a mudanca ao GitHub, se houver.
 
 ## Estrategia recomendada
 

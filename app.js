@@ -38,6 +38,7 @@ function supabaseConfig() {
     url: (config.url || "").replace(/\/$/, ""),
     anonKey: config.anonKey || "",
     table: config.table || "played_games",
+    resultsTable: config.resultsTable || "lotofacil_results",
   };
 }
 
@@ -90,6 +91,13 @@ function formatUpdatedAt(value) {
     dateStyle: "short",
     timeStyle: "short",
   });
+}
+
+function formatDrawDate(value) {
+  if (!value) return "";
+  if (value.includes("/")) return value;
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function isLocalServer() {
@@ -1003,10 +1011,60 @@ async function copyGames() {
 }
 
 async function loadData() {
+  const cloudData = await loadSupabaseResults();
+  if (cloudData) {
+    state.data = cloudData;
+    refreshAnalysis();
+    return;
+  }
+
   const response = await fetch(`data/lotofacil.json?v=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) throw new Error("Nao foi possivel carregar data/lotofacil.json");
   state.data = await response.json();
   refreshAnalysis();
+}
+
+async function loadSupabaseResults() {
+  if (!isSupabaseReady()) return null;
+  const config = supabaseConfig();
+  const pageSize = 1000;
+  const rows = [];
+
+  try {
+    for (let offset = 0; offset < 10000; offset += pageSize) {
+      const url = `${config.url}/rest/v1/${config.resultsTable}?select=contest,weekday,draw_date,numbers&order=contest.desc&limit=${pageSize}&offset=${offset}`;
+      const response = await fetch(url, {
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${config.anonKey}`,
+        },
+      });
+      if (!response.ok) throw new Error("Tabela de resultados indisponivel.");
+      const batch = await response.json();
+      rows.push(...batch);
+      if (batch.length < pageSize) break;
+    }
+  } catch {
+    return null;
+  }
+
+  if (!rows.length) return null;
+  const results = rows.map((row) => ({
+    contest: row.contest,
+    weekday: row.weekday,
+    date: formatDrawDate(row.draw_date),
+    numbers: row.numbers,
+  }));
+
+  return {
+    source: "Supabase",
+    updated_at: new Date().toISOString(),
+    total_pages: null,
+    total_contests: results.length,
+    latest_contest: results[0].contest,
+    oldest_contest: results.at(-1).contest,
+    results,
+  };
 }
 
 async function forceUpdate() {

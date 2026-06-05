@@ -129,6 +129,25 @@ Para usar no celular e no computador com o mesmo diario, use o mesmo email e sen
 
 Importante: a chave `anonKey` do Supabase pode ficar no app porque quem protege seus dados sao as politicas RLS do arquivo `supabase-schema.sql`.
 
+## Enviar concursos historicos ao Supabase
+
+Tambem e possivel subir a base historica de concursos para a tabela `lotofacil_results`.
+
+1. Execute novamente o conteudo de `supabase-schema.sql` no `SQL Editor`.
+2. No Supabase, abra `Project Settings` > `API`.
+3. Copie a chave `service_role`.
+4. No PowerShell, rode:
+
+```powershell
+$env:SUPABASE_SERVICE_ROLE_KEY="COLE_A_SERVICE_ROLE_AQUI"
+npm run upload-results
+Remove-Item Env:\SUPABASE_SERVICE_ROLE_KEY
+```
+
+Nao coloque a `service_role` no `supabase-config.js` e nao envie essa chave para o GitHub. Ela serve apenas para o envio local em massa.
+
+Depois do upload, o app tenta carregar os concursos pelo Supabase. Se a tabela estiver vazia ou indisponivel, ele continua usando `data/lotofacil.json`.
+
 ## Estrategia recomendada
 
 Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.

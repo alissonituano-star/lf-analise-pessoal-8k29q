@@ -65,3 +65,39 @@ on public.played_games
 for delete
 to authenticated
 using (auth.uid() = user_id);
+
+create table if not exists public.lotofacil_results (
+  contest integer primary key,
+  weekday text,
+  draw_date date not null,
+  numbers integer[] not null,
+  sum_total integer not null,
+  odd_count integer not null,
+  even_count integer not null,
+  low_count integer not null,
+  high_count integer not null,
+  source text,
+  source_updated_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists lotofacil_results_draw_date_idx
+  on public.lotofacil_results (draw_date desc);
+
+drop trigger if exists lotofacil_results_set_updated_at on public.lotofacil_results;
+
+create trigger lotofacil_results_set_updated_at
+before update on public.lotofacil_results
+for each row
+execute function public.set_updated_at();
+
+alter table public.lotofacil_results enable row level security;
+
+drop policy if exists "Anyone can read lotofacil results" on public.lotofacil_results;
+
+create policy "Anyone can read lotofacil results"
+on public.lotofacil_results
+for select
+to anon, authenticated
+using (true);

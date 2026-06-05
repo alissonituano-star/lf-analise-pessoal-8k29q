@@ -18,7 +18,7 @@
       <div class="brand-lockup">
         <img src="assets/icon.svg" alt="" class="app-logo" width="44" height="44">
         <div>
-          <p class="eyebrow">Analise historica</p>
+          <p class="eyebrow">Uso pessoal</p>
           <h1>Gerador Lotofacil</h1>
         </div>
       </div>
@@ -30,8 +30,8 @@
 
     <main class="layout">
       <section class="mobile-hero">
-        <p class="kicker">Uso rapido</p>
-        <h2>Gere jogos equilibrados e veja o que cada numero esta fazendo.</h2>
+        <p class="kicker">Uso pessoal</p>
+        <h2 id="decisionSummaryMobile">Preparando recomendacao do dia.</h2>
         <button class="install-button full" id="installAppMobile" hidden>Instalar no celular</button>
       </section>
 
@@ -91,6 +91,21 @@
         </div>
         <button id="generate">Gerar jogos</button>
         <p class="note" id="strategyNote">A recomendacao pratica para quem joga pouco e gerar 1 jogo forte, equilibrado e diferente dos jogos ja registrados.</p>
+      </section>
+
+      <section class="panel wide daily-panel">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Decisao diaria</p>
+            <h2>Jogo do Dia</h2>
+          </div>
+          <div class="button-row">
+            <button class="ghost action-button" id="saveDaily">Registrar</button>
+            <button class="ghost action-button" id="copyDaily">Copiar</button>
+          </div>
+        </div>
+        <p class="helper decision-summary" id="decisionSummary">Preparando recomendacao do dia.</p>
+        <div id="dailyGame" class="daily-game"></div>
       </section>
 
       <section class="panel summary">
@@ -184,11 +199,16 @@
             <p class="kicker">Seu uso</p>
             <h2>Diario de jogos</h2>
           </div>
-          <button class="ghost action-button" id="clearHistory">Limpar</button>
+          <div class="button-row">
+            <button class="ghost action-button" id="importHistory">Importar</button>
+            <button class="ghost action-button" id="exportHistory">Exportar</button>
+            <button class="ghost action-button" id="clearHistory">Limpar</button>
+          </div>
         </div>
         <p class="helper">Registre o que voce jogou. Quando o concurso estiver na base, o sistema confere os acertos automaticamente.</p>
         <div id="historyStats" class="history-stats"></div>
         <div id="history" class="history"></div>
+        <input id="historyFile" type="file" accept="application/json,.json,.csv,text/csv" hidden>
       </section>
     </main>
 

@@ -363,6 +363,8 @@ function generateClosureGames(count, strategy, playedKeys) {
 
 function finishGeneration() {
   updateStrategyNote();
+  renderDecisionSummary();
+  renderDailyGame();
   renderGames();
   renderCoverage();
   renderBacktest();
@@ -383,6 +385,25 @@ function updateStrategyNote() {
     ? ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}, acima do limite informado.`
     : ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`;
   $("#strategyNote").textContent = `${notes[mode]}${budgetNote}`;
+}
+
+function renderDecisionSummary() {
+  const mode = $("#generationMode").value;
+  const size = Number($("#gameSize").value || 15);
+  const count = mode === "daily" ? 1 : Number($("#gameCount").value || 1);
+  const estimated = count * estimatedGameCost(size);
+  const budget = Number($("#dailyBudget").value || 0);
+  const modeLabel = {
+    daily: "1 aposta simples",
+    diversified: `${count} apostas diversificadas`,
+    closure20: `${count} apostas em base 20`,
+  }[mode];
+  const overBudget = budget > 0 && estimated > budget;
+  const text = overBudget
+    ? `Custo acima do limite diario. Reduza quantidade ou numeros antes de jogar. Estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`
+    : `Hoje o sistema recomenda ${modeLabel} com ${size} numeros no perfil ${strategyLabel($("#strategy").value)}. Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`;
+  $("#decisionSummary").textContent = text;
+  $("#decisionSummaryMobile").textContent = text;
 }
 
 function renderSummary() {
@@ -441,6 +462,27 @@ function renderGames() {
       </div>
     </article>
   `).join("");
+}
+
+function renderDailyGame() {
+  const game = state.games[0];
+  if (!game) {
+    $("#dailyGame").innerHTML = `<div class="empty-state">Gere um jogo para ver a recomendacao principal.</div>`;
+    return;
+  }
+  $("#dailyGame").innerHTML = `
+    <article class="daily-card">
+      <div>
+        <strong>Nota estatistica: ${game.score.toFixed(2)}</strong>
+        <span>${describeGame(game.numbers)}</span>
+      </div>
+      <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
+      <div class="game-explain">
+        <strong>Por que este jogo?</strong>
+        <ul>${explainGame(game.numbers, state.analysis).slice(0, 4).map((item) => `<li>${item}</li>`).join("")}</ul>
+      </div>
+    </article>
+  `;
 }
 
 function describeGame(numbers) {
@@ -577,6 +619,21 @@ function savePlayedGames() {
   showToast(added ? `${added} jogo(s) registrado(s).` : "Esses jogos ja estavam registrados.");
 }
 
+function saveDailyGame() {
+  if (!state.games[0]) return;
+  const original = state.games;
+  state.games = [original[0]];
+  savePlayedGames();
+  state.games = original;
+}
+
+async function copyDailyGame() {
+  const game = state.games[0];
+  if (!game) return;
+  await navigator.clipboard.writeText(`Jogo do Dia: ${game.numbers.map(formatNumber).join(" ")}`);
+  showToast("Jogo do Dia copiado.");
+}
+
 function renderHistory() {
   const entries = getPlayedGames();
   renderHistoryStats(entries);
@@ -664,6 +721,47 @@ function clearHistory() {
   setPlayedGames([]);
   renderHistory();
   showToast("Diario limpo.");
+}
+
+function exportHistory() {
+  const entries = getPlayedGames();
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    source: "Gerador Lotofacil",
+    entries,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `diario-lotofacil-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast("Diario exportado.");
+}
+
+function importHistoryClick() {
+  $("#historyFile").click();
+}
+
+async function importHistory(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const imported = Array.isArray(parsed) ? parsed : parsed.entries;
+    if (!Array.isArray(imported)) throw new Error("Arquivo invalido.");
+    const current = getPlayedGames();
+    const byKey = new Map([...imported, ...current].filter((entry) => entry?.key).map((entry) => [entry.key, entry]));
+    setPlayedGames([...byKey.values()]);
+    renderHistory();
+    showToast("Diario importado.");
+  } catch {
+    showToast("Nao consegui importar. Use o JSON exportado pelo sistema.");
+  } finally {
+    event.target.value = "";
+  }
 }
 
 function downloadCsv() {
@@ -820,6 +918,11 @@ $("#dailyBudget").addEventListener("change", updateStrategyNote);
 $("#downloadCsv").addEventListener("click", downloadCsv);
 $("#copyGames").addEventListener("click", copyGames);
 $("#savePlayed").addEventListener("click", savePlayedGames);
+$("#saveDaily").addEventListener("click", saveDailyGame);
+$("#copyDaily").addEventListener("click", copyDailyGame);
+$("#exportHistory").addEventListener("click", exportHistory);
+$("#importHistory").addEventListener("click", importHistoryClick);
+$("#historyFile").addEventListener("change", importHistory);
 $("#clearHistory").addEventListener("click", clearHistory);
 $("#forceUpdate").addEventListener("click", forceUpdate);
 installButtons().forEach((button) => button.addEventListener("click", installApp));

@@ -303,6 +303,42 @@ button:disabled {
   color: var(--muted);
 }
 
+.daily-panel {
+  border-left: 4px solid var(--brand);
+}
+
+.decision-summary {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.daily-game {
+  margin-top: 14px;
+}
+
+.daily-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfdfb;
+}
+
+.daily-card > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.daily-card strong {
+  color: var(--ink);
+}
+
+.daily-card span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .section-title,
 .section-heading {
   display: flex;
@@ -847,6 +883,10 @@ button:disabled {
   .section-title,
   .section-heading {
     align-items: center;
+  }
+
+  .button-row {
+    justify-content: start;
   }
 
   .number-grid {

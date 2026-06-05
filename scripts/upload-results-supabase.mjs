@@ -59,6 +59,9 @@ async function main() {
   if (!serviceKey) {
     throw new Error("Defina SUPABASE_SERVICE_ROLE_KEY antes de rodar este script.");
   }
+  if (serviceKey.startsWith("sb_publishable_")) {
+    throw new Error("Voce usou uma chave sb_publishable. Para upload em massa, use a service_role/secret key do Supabase.");
+  }
 
   const configSource = await readFile(CONFIG_FILE, "utf8");
   const url = readConfigValue(configSource, "url").replace(/\/$/, "");

@@ -135,7 +135,10 @@ Tambem e possivel subir a base historica de concursos para a tabela `lotofacil_r
 
 1. Execute novamente o conteudo de `supabase-schema.sql` no `SQL Editor`.
 2. No Supabase, abra `Project Settings` > `API`.
-3. Copie a chave `service_role`.
+3. Copie a chave secreta `service_role`.
+   - Nao use a chave `anon`.
+   - Nao use chave que comeca com `sb_publishable_`.
+   - Use a chave `service_role` ou `secret`, normalmente exibida como chave secreta do projeto.
 4. No PowerShell, rode:
 
 ```powershell

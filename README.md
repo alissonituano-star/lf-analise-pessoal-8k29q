@@ -166,6 +166,32 @@ Depois disso, sempre que `npm run sync` ou `scripts\sync-github.bat` rodar, o fl
 3. Atualizar `data/lotofacil.json`.
 4. Enviar a mudanca ao GitHub, se houver.
 
+Para criar o arquivo com seguranca:
+
+1. Copie `supabase-service-role.example`.
+2. Renomeie a copia para `supabase-service-role.key`.
+3. Substitua o conteudo pela chave `service_role` ou `sb_secret`.
+
+Para instalar o agendamento automatico no Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup-auto-sync.ps1
+```
+
+Isso cria uma tarefa chamada `Lotofacil - Atualizar Supabase e GitHub`, todos os dias as 23:40.
+
+Os registros ficam em:
+
+```text
+logs\sync.log
+```
+
+Para testar manualmente o mesmo fluxo:
+
+```powershell
+scripts\sync-github.bat
+```
+
 ## Estrategia recomendada
 
 Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.

@@ -1,11 +1,33 @@
 {
   "source": "https://lotorama.com.br/lotofacil/todos-os-resultados/",
-  "updated_at": "2026-06-03T22:13:26.152Z",
+  "updated_at": "2026-06-05T00:31:49.588Z",
   "total_pages": 19,
-  "total_contests": 3701,
-  "latest_contest": 3701,
+  "total_contests": 3702,
+  "latest_contest": 3702,
   "oldest_contest": 1,
   "results": [
+    {
+      "contest": 3702,
+      "weekday": "Quarta-feira",
+      "date": "03/06/2026",
+      "numbers": [
+        2,
+        3,
+        5,
+        9,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        20,
+        21,
+        22,
+        23,
+        25
+      ]
+    },
     {
       "contest": 3701,
       "weekday": "Terça-feira",

@@ -8,6 +8,7 @@
     "sync": "node scripts/update-and-push.mjs",
     "force": "node scripts/update-and-push.mjs",
     "upload-results": "node scripts/upload-results-supabase.mjs",
+    "audit": "node scripts/audit-recommendations.mjs",
     "serve": "node scripts/serve.mjs",
     "dev": "node scripts/start.mjs",
     "mobile": "node scripts/start.mjs --host=0.0.0.0 --port=8001"

@@ -200,14 +200,15 @@ Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.
 
 Quando jogar mais de um jogo, use `Diversificar jogos` ou `Base 20 amarrada`, porque o sistema tenta evitar combinacoes muito parecidas entre si.
 
-O app ja abre com o padrao recomendado para uso diario:
+O app ja abre com o padrao recomendado para o plano de 4 jogos diarios:
 
-- 1 jogo por dia.
+- 4 jogos por dia.
 - 15 numeros.
 - Perfil equilibrado.
+- Modo diversificado, penalizando repeticao alta entre jogos.
 - Janela recente de 120 concursos.
 - Repeticao automatica do ultimo sorteio.
-- Limite diario de R$ 3,50.
+- Limite diario de R$ 14,00.
 
 Os demais campos ficam em `Ajustes avancados` e servem para testar cenarios com mais jogos, mais dezenas ou perfis diferentes.
 

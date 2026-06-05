@@ -180,7 +180,8 @@ function gameIssues(numbers, analysis) {
   if (Math.abs(profile.odd - idealHalf) > 2) issues.push("paridade desequilibrada");
   if (Math.abs(profile.low - idealHalf) > 2) issues.push("baixos/altos desequilibrado");
   if (profile.sequence >= 6) issues.push("sequencia longa");
-  if (profile.rows.some((value) => value === 0 || value > 5)) issues.push("linhas concentradas");
+  if (profile.rows.some((value) => value === 0 || value > 4)) issues.push("linhas concentradas");
+  if (profile.cols.some((value) => value === 0 || value > 4)) issues.push("colunas concentradas");
   if (repeatLatest > Math.ceil(numbers.length * 0.75)) issues.push("repete demais o ultimo sorteio");
   if (repeatLatest < minRepeat || repeatLatest > maxRepeat) issues.push("fora da faixa de repeticao do ultimo");
   if (maxOldSimilarity >= 14) issues.push("muito parecido com concurso antigo");
@@ -356,7 +357,8 @@ function generateGames() {
     return;
   }
 
-  for (let attempt = 0; attempt < count * 160; attempt += 1) {
+  const attemptMultiplier = mode === "diversified" ? 320 : 160;
+  for (let attempt = 0; attempt < count * attemptMultiplier; attempt += 1) {
     const candidate = createCandidate(state.analysis, strategy, size);
     const key = candidate.numbers.join("-");
     if (!seen.has(key) && !playedKeys.has(gameKey(candidate.numbers)) && isStrongEnough(candidate.numbers, state.analysis)) {
@@ -374,12 +376,44 @@ function generateGames() {
     }
   }
 
-  state.games = candidates
-    .sort((a, b) => b.score - a.score)
-    .slice(0, count)
-    .map((game, index) => ({ ...game, index: index + 1 }));
+  const selected = mode === "diversified"
+    ? selectDiversifiedGames(candidates, count, size)
+    : candidates.sort((a, b) => b.score - a.score).slice(0, count);
+
+  state.games = selected.map((game, index) => ({ ...game, index: index + 1 }));
 
   finishGeneration();
+}
+
+function selectDiversifiedGames(candidates, count, size) {
+  const pool = [...candidates].sort((a, b) => b.score - a.score);
+  const selected = [];
+  const targetOverlap = size <= 15 ? 9 : Math.ceil(size * 0.6);
+
+  while (selected.length < count && pool.length) {
+    const ranked = pool
+      .map((candidate) => {
+        const overlaps = selected.map((game) => intersectionCount(candidate.numbers, game.numbers));
+        const maxOverlap = overlaps.length ? Math.max(...overlaps) : 0;
+        const avgOverlap = overlaps.length ? average(overlaps) : 0;
+        const covered = new Set(selected.flatMap((game) => game.numbers));
+        const newNumbers = candidate.numbers.filter((number) => !covered.has(number)).length;
+        const excessOverlap = Math.max(0, maxOverlap - targetOverlap);
+        return {
+          candidate,
+          adjustedScore: candidate.score - excessOverlap * 0.75 - avgOverlap * 0.05 + newNumbers * 0.12,
+        };
+      })
+      .sort((a, b) => b.adjustedScore - a.adjustedScore);
+
+    const best = ranked[0].candidate;
+    selected.push(best);
+    const bestKey = gameKey(best.numbers);
+    const index = pool.findIndex((candidate) => gameKey(candidate.numbers) === bestKey);
+    if (index >= 0) pool.splice(index, 1);
+  }
+
+  return selected;
 }
 
 function generateClosureGames(count, strategy, playedKeys) {
@@ -436,14 +470,14 @@ function updateStrategyNote() {
   const estimated = count * estimatedGameCost(Number($("#gameSize").value || 15));
   const notes = {
     daily: "Modo 1 jogo: prioriza uma combinacao forte, equilibrada e diferente do seu historico.",
-    diversified: "Modo diversificar: reduz repeticao entre jogos para cobrir mais combinacoes possiveis.",
+    diversified: "Modo diversificar: seleciona 4 jogos fortes, mas penaliza repeticao alta entre eles para cobrir mais dezenas.",
     closure20: "Modo base 20: monta jogos amarrados dentro de uma base forte de 20 dezenas.",
   };
   const budgetNote = budget > 0 && estimated > budget
     ? ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}, acima do limite informado.`
     : ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`;
   $("#strategyNote").textContent = `${notes[mode]}${budgetNote}`;
-  $("#generate").textContent = mode === "daily" ? "Gerar jogo recomendado" : "Gerar jogos";
+  $("#generate").textContent = mode === "daily" ? "Gerar jogo recomendado" : "Gerar jogos recomendados";
 }
 
 function renderDecisionSummary() {

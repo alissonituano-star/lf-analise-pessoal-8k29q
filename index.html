@@ -37,20 +37,20 @@
 
       <section class="panel controls">
         <p class="kicker">Padrao recomendado</p>
-        <h2>Jogo de hoje</h2>
+        <h2>Plano de hoje</h2>
         <div class="preset-card">
-          <strong>1 aposta simples de 15 numeros</strong>
-          <span>Perfil equilibrado, janela recente de 120 concursos e repeticao automatica do ultimo sorteio.</span>
+          <strong>4 apostas simples de 15 numeros</strong>
+          <span>Perfil equilibrado, jogos diversificados, janela recente de 120 concursos e repeticao automatica do ultimo sorteio.</span>
         </div>
-        <button id="generate">Gerar jogo recomendado</button>
-        <p class="note" id="strategyNote">A recomendacao pratica para quem joga pouco e gerar 1 jogo forte, equilibrado e diferente dos jogos ja registrados.</p>
+        <button id="generate">Gerar jogos recomendados</button>
+        <p class="note" id="strategyNote">A recomendacao para 4 jogos diarios e diversificar as apostas, mantendo equilibrio estatistico e evitando jogos parecidos demais.</p>
 
         <details class="advanced-settings">
           <summary>Ajustes avancados</summary>
           <div class="control-grid">
             <label>
               Quantidade
-              <input id="gameCount" type="number" min="1" max="100" value="1">
+              <input id="gameCount" type="number" min="1" max="100" value="4">
             </label>
             <label>
               Janela recente
@@ -80,13 +80,13 @@
               Modo
               <select id="generationMode">
                 <option value="daily">1 jogo do dia</option>
-                <option value="diversified">Diversificar jogos</option>
+                <option value="diversified" selected>Diversificar jogos</option>
                 <option value="closure20">Base 20 amarrada</option>
               </select>
             </label>
             <label>
               Limite diario
-              <input id="dailyBudget" type="number" min="0" step="0.50" value="3.50">
+              <input id="dailyBudget" type="number" min="0" step="0.50" value="14.00">
             </label>
             <label>
               Repetir ultimo

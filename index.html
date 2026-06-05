@@ -66,9 +66,21 @@
               <option value="mixed">Misto agressivo</option>
             </select>
           </label>
+          <label>
+            Modo
+            <select id="generationMode">
+              <option value="daily">1 jogo do dia</option>
+              <option value="diversified">Diversificar jogos</option>
+              <option value="closure20">Base 20 amarrada</option>
+            </select>
+          </label>
+          <label>
+            Limite diario
+            <input id="dailyBudget" type="number" min="0" step="0.50" value="3.50">
+          </label>
         </div>
         <button id="generate">Gerar jogos</button>
-        <p class="note">A recomendacao pratica para quem joga 4 apostas por dia e gerar 4 jogos unicos, equilibrados e sem repetir combinacoes entre si.</p>
+        <p class="note" id="strategyNote">A recomendacao pratica para quem joga pouco e gerar 1 jogo forte, equilibrado e diferente dos jogos ja registrados.</p>
       </section>
 
       <section class="panel summary">
@@ -97,9 +109,13 @@
             <p class="kicker">Sugestao principal</p>
             <h2>Jogos sugeridos</h2>
           </div>
-          <button class="ghost action-button" id="copyGames">Copiar</button>
+          <div class="button-row">
+            <button class="ghost action-button" id="savePlayed">Registrar</button>
+            <button class="ghost action-button" id="copyGames">Copiar</button>
+          </div>
         </div>
         <p class="helper">Os jogos sao ranqueados por equilibrio: frequencia, atraso, soma, pares e distribuicao no volante.</p>
+        <div id="coverage" class="coverage"></div>
         <div id="games" class="games"></div>
       </section>
 
@@ -149,6 +165,18 @@
         </div>
         <p class="helper">Compara os jogos sugeridos contra os ultimos concursos. Serve para avaliar a estrategia, nao para prever o proximo resultado.</p>
         <div id="backtest" class="backtest"></div>
+      </section>
+
+      <section class="panel wide">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Seu uso</p>
+            <h2>Diario de jogos</h2>
+          </div>
+          <button class="ghost action-button" id="clearHistory">Limpar</button>
+        </div>
+        <p class="helper">Registre o que voce jogou. Quando o concurso estiver na base, o sistema confere os acertos automaticamente.</p>
+        <div id="history" class="history"></div>
       </section>
     </main>
 

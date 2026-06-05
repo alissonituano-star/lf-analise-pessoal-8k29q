@@ -1,4 +1,5 @@
 const NUMBERS = Array.from({ length: 25 }, (_, index) => index + 1);
+const STORAGE_KEY = "lotofacil-played-games-v1";
 const state = {
   data: null,
   analysis: null,
@@ -11,6 +12,22 @@ const installButtons = () => [$("#installApp"), $("#installAppMobile")].filter(B
 
 function formatNumber(value) {
   return String(value).padStart(2, "0");
+}
+
+function gameKey(numbers) {
+  return [...numbers].sort((a, b) => a - b).map(formatNumber).join("-");
+}
+
+function getPlayedGames() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function setPlayedGames(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, 250)));
 }
 
 function average(values) {
@@ -49,6 +66,68 @@ function combinations(items, size) {
   };
   walk(0, []);
   return output;
+}
+
+function combinationCount(n, k) {
+  let result = 1;
+  for (let index = 1; index <= k; index += 1) {
+    result = result * (n - index + 1) / index;
+  }
+  return Math.round(result);
+}
+
+function estimatedGameCost(size) {
+  return combinationCount(size, 15) * 3.5;
+}
+
+function intersectionCount(a, b) {
+  return a.filter((number) => b.includes(number)).length;
+}
+
+function maxSequentialRun(numbers) {
+  let best = 1;
+  let current = 1;
+  for (let index = 1; index < numbers.length; index += 1) {
+    if (numbers[index] === numbers[index - 1] + 1) current += 1;
+    else current = 1;
+    best = Math.max(best, current);
+  }
+  return best;
+}
+
+function gameProfile(numbers) {
+  const sum = numbers.reduce((total, number) => total + number, 0);
+  const odd = numbers.filter((number) => number % 2).length;
+  const even = numbers.length - odd;
+  const low = numbers.filter((number) => number <= 13).length;
+  const high = numbers.length - low;
+  const rows = [0, 0, 0, 0, 0];
+  const cols = [0, 0, 0, 0, 0];
+  numbers.forEach((number) => {
+    rows[Math.floor((number - 1) / 5)] += 1;
+    cols[(number - 1) % 5] += 1;
+  });
+  return { sum, odd, even, low, high, rows, cols, sequence: maxSequentialRun(numbers) };
+}
+
+function gameIssues(numbers, analysis) {
+  const profile = gameProfile(numbers);
+  const latest = analysis.sorted[0]?.numbers || [];
+  const repeatLatest = intersectionCount(numbers, latest);
+  const idealHalf = numbers.length / 2;
+  const issues = [];
+
+  if (Math.abs(profile.sum - analysis.avgSum) > 38) issues.push("soma fora do padrao");
+  if (Math.abs(profile.odd - idealHalf) > 2) issues.push("paridade desequilibrada");
+  if (Math.abs(profile.low - idealHalf) > 2) issues.push("baixos/altos desequilibrado");
+  if (profile.sequence >= 6) issues.push("sequencia longa");
+  if (profile.rows.some((value) => value === 0 || value > 5)) issues.push("linhas concentradas");
+  if (repeatLatest > Math.ceil(numbers.length * 0.75)) issues.push("repete demais o ultimo sorteio");
+  return issues;
+}
+
+function isStrongEnough(numbers, analysis) {
+  return gameIssues(numbers, analysis).length === 0;
 }
 
 function analyze(results, recentWindow) {
@@ -119,15 +198,7 @@ function analyze(results, recentWindow) {
 
 function scoreGame(numbers, analysis, strategy) {
   const rankByNumber = Object.fromEntries(analysis.ranking.map((item) => [item.number, item]));
-  const sum = numbers.reduce((total, number) => total + number, 0);
-  const odd = numbers.filter((number) => number % 2).length;
-  const low = numbers.filter((number) => number <= 13).length;
-  const rows = [0, 0, 0, 0, 0];
-  const cols = [0, 0, 0, 0, 0];
-  numbers.forEach((number) => {
-    rows[Math.floor((number - 1) / 5)] += 1;
-    cols[(number - 1) % 5] += 1;
-  });
+  const profile = gameProfile(numbers);
 
   const profileWeights = {
     balanced: { score: 0.55, delay: 0.15, freq: 0.15, recent: 0.15 },
@@ -145,13 +216,14 @@ function scoreGame(numbers, analysis, strategy) {
       + item.recentFrequency * profileWeights.recent / 100;
   }, 0);
 
-  const sumPenalty = Math.abs(sum - analysis.avgSum) / 30;
-  const oddPenalty = Math.abs(odd - numbers.length / 2) * 0.18;
-  const lowPenalty = Math.abs(low - numbers.length / 2) * 0.12;
-  const rowPenalty = rows.filter((value) => value === 0 || value > 4).length * 0.18;
-  const colPenalty = cols.filter((value) => value === 0 || value > 4).length * 0.12;
+  const sumPenalty = Math.abs(profile.sum - analysis.avgSum) / 30;
+  const oddPenalty = Math.abs(profile.odd - numbers.length / 2) * 0.18;
+  const lowPenalty = Math.abs(profile.low - numbers.length / 2) * 0.12;
+  const rowPenalty = profile.rows.filter((value) => value === 0 || value > 4).length * 0.18;
+  const colPenalty = profile.cols.filter((value) => value === 0 || value > 4).length * 0.12;
+  const issuePenalty = gameIssues(numbers, analysis).length * 0.45;
 
-  return raw - sumPenalty - oddPenalty - lowPenalty - rowPenalty - colPenalty;
+  return raw - sumPenalty - oddPenalty - lowPenalty - rowPenalty - colPenalty - issuePenalty;
 }
 
 function createCandidate(analysis, strategy, size) {
@@ -173,16 +245,34 @@ function createCandidate(analysis, strategy, size) {
 }
 
 function generateGames() {
-  const count = Number($("#gameCount").value);
+  const mode = $("#generationMode").value;
+  const requestedCount = Number($("#gameCount").value);
+  const count = mode === "daily" ? 1 : requestedCount;
   const size = Number($("#gameSize").value);
   const strategy = $("#strategy").value;
+  const playedKeys = new Set(getPlayedGames().map((entry) => entry.key));
   const seen = new Set();
   const candidates = [];
+
+  if (mode === "closure20") {
+    state.games = generateClosureGames(count, strategy, playedKeys);
+    finishGeneration();
+    return;
+  }
 
   for (let attempt = 0; attempt < count * 160; attempt += 1) {
     const candidate = createCandidate(state.analysis, strategy, size);
     const key = candidate.numbers.join("-");
-    if (!seen.has(key)) {
+    if (!seen.has(key) && !playedKeys.has(gameKey(candidate.numbers)) && isStrongEnough(candidate.numbers, state.analysis)) {
+      seen.add(key);
+      candidates.push(candidate);
+    }
+  }
+
+  for (let attempt = 0; candidates.length < count && attempt < count * 120; attempt += 1) {
+    const candidate = createCandidate(state.analysis, strategy, size);
+    const key = candidate.numbers.join("-");
+    if (!seen.has(key) && !playedKeys.has(gameKey(candidate.numbers))) {
       seen.add(key);
       candidates.push(candidate);
     }
@@ -193,8 +283,68 @@ function generateGames() {
     .slice(0, count)
     .map((game, index) => ({ ...game, index: index + 1 }));
 
+  finishGeneration();
+}
+
+function generateClosureGames(count, strategy, playedKeys) {
+  const base = state.analysis.ranking.slice(0, 20).map((item) => item.number).sort((a, b) => a - b);
+  const removable = [...base].sort((a, b) => {
+    const scoreA = state.analysis.ranking.find((item) => item.number === a)?.score || 0;
+    const scoreB = state.analysis.ranking.find((item) => item.number === b)?.score || 0;
+    return scoreA - scoreB;
+  });
+  const games = [];
+  const seen = new Set();
+
+  for (let attempt = 0; attempt < count * 120 && games.length < count; attempt += 1) {
+    const offset = attempt % removable.length;
+    const shuffled = [...removable.slice(offset), ...removable.slice(0, offset)];
+    const remove = new Set(shuffled.filter((_, index) => index % count === games.length % Math.max(count, 1)).slice(0, 5));
+    while (remove.size < 5) remove.add(shuffled[Math.floor(Math.random() * shuffled.length)]);
+    const numbers = base.filter((number) => !remove.has(number)).sort((a, b) => a - b);
+    const key = gameKey(numbers);
+    if (!seen.has(key) && !playedKeys.has(key) && isStrongEnough(numbers, state.analysis)) {
+      seen.add(key);
+      games.push({ numbers, score: scoreGame(numbers, state.analysis, strategy), base });
+    }
+  }
+
+  for (let attempt = 0; games.length < count && attempt < count * 80; attempt += 1) {
+    const numbers = createCandidate(state.analysis, strategy, 15).numbers;
+    const key = gameKey(numbers);
+    if (!seen.has(key) && !playedKeys.has(key)) {
+      seen.add(key);
+      games.push({ numbers, score: scoreGame(numbers, state.analysis, strategy), base });
+    }
+  }
+
+  return games
+    .sort((a, b) => b.score - a.score)
+    .map((game, index) => ({ ...game, index: index + 1 }));
+}
+
+function finishGeneration() {
+  updateStrategyNote();
   renderGames();
+  renderCoverage();
   renderBacktest();
+  renderHistory();
+}
+
+function updateStrategyNote() {
+  const mode = $("#generationMode").value;
+  const budget = Number($("#dailyBudget").value || 0);
+  const count = mode === "daily" ? 1 : Number($("#gameCount").value || 1);
+  const estimated = count * estimatedGameCost(Number($("#gameSize").value || 15));
+  const notes = {
+    daily: "Modo 1 jogo: prioriza uma combinacao forte, equilibrada e diferente do seu historico.",
+    diversified: "Modo diversificar: reduz repeticao entre jogos para cobrir mais combinacoes possiveis.",
+    closure20: "Modo base 20: monta jogos amarrados dentro de uma base forte de 20 dezenas.",
+  };
+  const budgetNote = budget > 0 && estimated > budget
+    ? ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}, acima do limite informado.`
+    : ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`;
+  $("#strategyNote").textContent = `${notes[mode]}${budgetNote}`;
 }
 
 function renderSummary() {
@@ -245,18 +395,35 @@ function renderGames() {
       <div class="game-score">
         <strong>${game.score.toFixed(2)} pontos</strong>
         <span>${describeGame(game.numbers)}</span>
+        <small>${gameIssues(game.numbers, state.analysis).length ? `Alertas: ${gameIssues(game.numbers, state.analysis).join(", ")}` : "Sem alertas do filtro anti-jogo-fraco"}</small>
       </div>
     </article>
   `).join("");
 }
 
 function describeGame(numbers) {
-  const sum = numbers.reduce((total, number) => total + number, 0);
-  const odd = numbers.filter((number) => number % 2).length;
-  const even = numbers.length - odd;
-  const low = numbers.filter((number) => number <= 13).length;
-  const high = numbers.length - low;
-  return `Soma ${sum} | ${odd} impares/${even} pares | ${low} baixos/${high} altos`;
+  const profile = gameProfile(numbers);
+  return `Soma ${profile.sum} | ${profile.odd} impares/${profile.even} pares | ${profile.low} baixos/${profile.high} altos`;
+}
+
+function renderCoverage() {
+  if (!state.games.length) {
+    $("#coverage").innerHTML = "";
+    return;
+  }
+  const allNumbers = new Set(state.games.flatMap((game) => game.numbers));
+  const overlaps = [];
+  combinations(state.games, 2).forEach(([a, b]) => overlaps.push(intersectionCount(a.numbers, b.numbers)));
+  const maxOverlap = overlaps.length ? Math.max(...overlaps) : 0;
+  const avgOverlap = overlaps.length ? average(overlaps) : 0;
+  const base = state.games.find((game) => game.base)?.base;
+
+  $("#coverage").innerHTML = `
+    <div><strong>${allNumbers.size}</strong><small>dezenas cobertas</small></div>
+    <div><strong>${maxOverlap}</strong><small>maior repeticao entre jogos</small></div>
+    <div><strong>${avgOverlap.toFixed(1)}</strong><small>repeticao media</small></div>
+    ${base ? `<div><strong>${base.map(formatNumber).join(" ")}</strong><small>base 20 usada</small></div>` : ""}
+  `;
 }
 
 function renderBacktest() {
@@ -281,6 +448,66 @@ function renderBacktest() {
     <div><strong>${hits[14] || 0}</strong><small>resultados com 14 acertos</small></div>
     <div><strong>${hits[15] || 0}</strong><small>resultados com 15 acertos</small></div>
   `;
+}
+
+function savePlayedGames() {
+  if (!state.games.length) return;
+  const entries = getPlayedGames();
+  const existing = new Set(entries.map((entry) => entry.key));
+  const targetContest = (state.analysis.sorted[0]?.contest || 0) + 1;
+  const now = new Date().toISOString();
+  let added = 0;
+
+  state.games.forEach((game) => {
+    const key = gameKey(game.numbers);
+    if (existing.has(key)) return;
+    entries.unshift({
+      key,
+      numbers: game.numbers,
+      score: Number(game.score.toFixed(2)),
+      mode: $("#generationMode").value,
+      strategy: $("#strategy").value,
+      targetContest,
+      createdAt: now,
+    });
+    existing.add(key);
+    added += 1;
+  });
+
+  setPlayedGames(entries);
+  renderHistory();
+  showToast(added ? `${added} jogo(s) registrado(s).` : "Esses jogos ja estavam registrados.");
+}
+
+function renderHistory() {
+  const entries = getPlayedGames();
+  if (!entries.length) {
+    $("#history").innerHTML = `<div class="empty-state">Nenhum jogo registrado ainda.</div>`;
+    return;
+  }
+
+  const byContest = Object.fromEntries(state.analysis.sorted.map((draw) => [draw.contest, draw]));
+  $("#history").innerHTML = entries.slice(0, 12).map((entry) => {
+    const draw = byContest[entry.targetContest];
+    const hits = draw ? intersectionCount(entry.numbers, draw.numbers) : null;
+    return `
+      <article class="history-item">
+        <div>
+          <strong>Concurso ${entry.targetContest}</strong>
+          <small>${formatUpdatedAt(entry.createdAt)} | ${entry.mode}</small>
+        </div>
+        <div class="numbers">${entry.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
+        <div class="history-result">${hits === null ? "aguardando resultado" : `${hits} acertos`}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+function clearHistory() {
+  if (!confirm("Limpar o diario local de jogos?")) return;
+  setPlayedGames([]);
+  renderHistory();
+  showToast("Diario limpo.");
 }
 
 function downloadCsv() {
@@ -416,6 +643,7 @@ function refreshAnalysis() {
   renderRanking();
   renderPairs();
   generateGames();
+  renderHistory();
 }
 
 async function init() {
@@ -430,8 +658,12 @@ $("#generate").addEventListener("click", generateGames);
 $("#recentWindow").addEventListener("change", refreshAnalysis);
 $("#strategy").addEventListener("change", generateGames);
 $("#gameSize").addEventListener("change", generateGames);
+$("#generationMode").addEventListener("change", generateGames);
+$("#dailyBudget").addEventListener("change", updateStrategyNote);
 $("#downloadCsv").addEventListener("click", downloadCsv);
 $("#copyGames").addEventListener("click", copyGames);
+$("#savePlayed").addEventListener("click", savePlayedGames);
+$("#clearHistory").addEventListener("click", clearHistory);
 $("#forceUpdate").addEventListener("click", forceUpdate);
 installButtons().forEach((button) => button.addEventListener("click", installApp));
 

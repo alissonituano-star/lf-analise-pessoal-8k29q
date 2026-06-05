@@ -192,6 +192,13 @@ button:disabled {
   flex: 0 0 auto;
 }
 
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 8px;
+}
+
 .ghost:hover {
   background: #edf7f1;
 }
@@ -366,6 +373,34 @@ button:disabled {
   margin-top: 16px;
 }
 
+.coverage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.coverage div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--soft);
+}
+
+.coverage strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 18px;
+}
+
+.coverage small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .game {
   display: grid;
   grid-template-columns: minmax(96px, 120px) 1fr minmax(160px, 190px);
@@ -438,6 +473,11 @@ button:disabled {
   font-size: 16px;
 }
 
+.game-score small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .advice {
   border-left: 4px solid var(--accent);
 }
@@ -484,6 +524,48 @@ button:disabled {
   margin-top: 5px;
   color: var(--muted);
   line-height: 1.35;
+}
+
+.history {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr minmax(120px, 150px);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfb;
+}
+
+.history-item strong,
+.history-item small {
+  display: block;
+}
+
+.history-item small {
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.history-result {
+  color: var(--brand-dark);
+  font-weight: 800;
+  text-align: right;
+}
+
+.empty-state {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  color: var(--muted);
+  background: var(--soft);
 }
 
 @media (max-width: 1080px) {
@@ -710,6 +792,20 @@ button:disabled {
   }
 
   .game-score {
+    text-align: left;
+  }
+
+  .coverage {
+    grid-template-columns: 1fr;
+  }
+
+  .history-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .history-result {
     text-align: left;
   }
 

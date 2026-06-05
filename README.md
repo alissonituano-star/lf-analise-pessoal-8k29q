@@ -96,6 +96,17 @@ Ele executa `npm run sync`, que baixa os resultados pelo seu computador, cria co
 - Distribuicao por linhas, colunas, pares/impares, baixos/altos e soma.
 - Geracao de jogos ranqueados por uma heuristica estatistica.
 - Backtest simples, comparando jogos sugeridos contra sorteios passados.
+- Modo `1 jogo do dia`, focado em uma aposta unica e forte.
+- Modo `Diversificar jogos`, reduzindo repeticao entre apostas.
+- Modo `Base 20 amarrada`, criando jogos dentro de uma base forte de 20 dezenas.
+- Filtro anti-jogo-fraco para soma, paridade, altos/baixos, sequencias e concentracao.
+- Diario local de jogos, com conferencia automatica de acertos quando o resultado entra na base.
+
+## Estrategia recomendada
+
+Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.
+
+Quando jogar mais de um jogo, use `Diversificar jogos` ou `Base 20 amarrada`, porque o sistema tenta evitar combinacoes muito parecidas entre si.
 
 ## Aviso importante
 

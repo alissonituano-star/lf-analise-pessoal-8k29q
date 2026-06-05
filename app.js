@@ -887,6 +887,44 @@ function supabaseHeaders(useSession = true) {
   };
 }
 
+async function supabaseError(response, fallback) {
+  let details = "";
+  try {
+    const payload = await response.json();
+    details = payload.message || payload.error_description || payload.error || JSON.stringify(payload);
+  } catch {
+    details = await response.text().catch(() => "");
+  }
+  return new Error(details ? `${fallback}: ${details}` : fallback);
+}
+
+function sessionExpiresSoon(session) {
+  if (!session?.expires_at) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return session.expires_at - now < 120;
+}
+
+async function refreshCloudSession() {
+  if (!state.supabaseSession?.refresh_token) return false;
+  const config = supabaseConfig();
+  const response = await fetch(`${config.url}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: supabaseHeaders(false),
+    body: JSON.stringify({ refresh_token: state.supabaseSession.refresh_token }),
+  });
+
+  if (!response.ok) return false;
+  const session = await response.json();
+  setSupabaseSession(session);
+  return true;
+}
+
+async function ensureCloudSession() {
+  if (!state.supabaseSession?.access_token) return false;
+  if (!sessionExpiresSoon(state.supabaseSession)) return true;
+  return refreshCloudSession();
+}
+
 function normalizeEntry(entry) {
   return {
     user_id: state.supabaseSession.user.id,
@@ -919,7 +957,7 @@ async function fetchCloudEntries() {
   const userId = state.supabaseSession.user.id;
   const url = `${config.url}/rest/v1/${config.table}?user_id=eq.${encodeURIComponent(userId)}&select=*`;
   const response = await fetch(url, { headers: supabaseHeaders() });
-  if (!response.ok) throw new Error("Nao consegui baixar o diario da nuvem.");
+  if (!response.ok) throw await supabaseError(response, "Nao consegui baixar o diario da nuvem");
   return response.json();
 }
 
@@ -935,7 +973,7 @@ async function pushCloudEntries(entries) {
     },
     body: JSON.stringify(rows),
   });
-  if (!response.ok) throw new Error("Nao consegui enviar o diario para a nuvem.");
+  if (!response.ok) throw await supabaseError(response, "Nao consegui enviar o diario para a nuvem");
   return response.json();
 }
 
@@ -961,6 +999,13 @@ async function syncCloudHistory() {
     showToast("Faca login no Supabase primeiro.");
     return;
   }
+  const hasValidSession = await ensureCloudSession();
+  if (!hasValidSession) {
+    setSupabaseSession(null);
+    setCloudStatus("Sessao expirada. Entre novamente antes de sincronizar.", "warn");
+    showToast("Sessao expirada. Faca login novamente.");
+    return;
+  }
 
   const button = $("#syncCloud");
   const originalText = button.textContent;
@@ -979,6 +1024,9 @@ async function syncCloudHistory() {
     setCloudStatus(`Nuvem sincronizada: ${merged.length} jogo(s) no diario.`, "ok");
     showToast("Diario sincronizado com Supabase.");
   } catch (error) {
+    if (error.message.includes("JWT") || error.message.includes("expired") || error.message.includes("401")) {
+      setSupabaseSession(null);
+    }
     setCloudStatus(error.message, "error");
     showToast(error.message);
   } finally {
@@ -1012,7 +1060,7 @@ async function loginCloud() {
       headers: supabaseHeaders(false),
       body: JSON.stringify({ email, password }),
     });
-    if (!response.ok) throw new Error("Login nao autorizado. Confira email e senha.");
+    if (!response.ok) throw await supabaseError(response, "Login nao autorizado. Confira email e senha");
     const session = await response.json();
     setSupabaseSession(session);
     showToast("Conectado ao Supabase.");

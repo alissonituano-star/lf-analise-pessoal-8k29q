@@ -135,6 +135,17 @@ Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.
 
 Quando jogar mais de um jogo, use `Diversificar jogos` ou `Base 20 amarrada`, porque o sistema tenta evitar combinacoes muito parecidas entre si.
 
+O app ja abre com o padrao recomendado para uso diario:
+
+- 1 jogo por dia.
+- 15 numeros.
+- Perfil equilibrado.
+- Janela recente de 120 concursos.
+- Repeticao automatica do ultimo sorteio.
+- Limite diario de R$ 3,50.
+
+Os demais campos ficam em `Ajustes avancados` e servem para testar cenarios com mais jogos, mais dezenas ou perfis diferentes.
+
 ## Aviso importante
 
 Lotofacil e um jogo aleatorio. Analise historica pode ajudar a organizar escolhas e reduzir apostas muito desequilibradas, mas nao aumenta a probabilidade matematica de uma combinacao especifica ser sorteada nem garante premio.

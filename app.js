@@ -433,6 +433,7 @@ function updateStrategyNote() {
     ? ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}, acima do limite informado.`
     : ` Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`;
   $("#strategyNote").textContent = `${notes[mode]}${budgetNote}`;
+  $("#generate").textContent = mode === "daily" ? "Gerar jogo recomendado" : "Gerar jogos";
 }
 
 function renderDecisionSummary() {

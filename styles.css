@@ -125,6 +125,48 @@ label {
   display: grid;
 }
 
+.preset-card {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--brand);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--soft);
+}
+
+.preset-card strong {
+  font-size: 15px;
+}
+
+.preset-card span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.advanced-settings {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.advanced-settings summary {
+  cursor: pointer;
+  color: var(--brand-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.advanced-settings summary::marker {
+  color: var(--accent);
+}
+
+.advanced-settings .control-grid {
+  margin-top: 12px;
+}
+
 input,
 select,
 button {

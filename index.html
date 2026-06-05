@@ -36,61 +36,70 @@
       </section>
 
       <section class="panel controls">
-        <h2>Configurar jogos</h2>
-        <div class="control-grid">
-          <label>
-            Quantidade
-            <input id="gameCount" type="number" min="1" max="100" value="4">
-          </label>
-          <label>
-            Janela recente
-            <input id="recentWindow" type="number" min="10" max="500" value="120">
-          </label>
-          <label>
-            Numeros
-            <select id="gameSize">
-              <option value="15">15 numeros</option>
-              <option value="16">16 numeros</option>
-              <option value="17">17 numeros</option>
-              <option value="18">18 numeros</option>
-              <option value="19">19 numeros</option>
-              <option value="20">20 numeros</option>
-            </select>
-          </label>
-          <label>
-            Perfil
-            <select id="strategy">
-              <option value="balanced">Equilibrado</option>
-              <option value="hot">Mais sorteados</option>
-              <option value="overdue">Mais atrasados</option>
-              <option value="mixed">Misto agressivo</option>
-            </select>
-          </label>
-          <label>
-            Modo
-            <select id="generationMode">
-              <option value="daily">1 jogo do dia</option>
-              <option value="diversified">Diversificar jogos</option>
-              <option value="closure20">Base 20 amarrada</option>
-            </select>
-          </label>
-          <label>
-            Limite diario
-            <input id="dailyBudget" type="number" min="0" step="0.50" value="3.50">
-          </label>
-          <label>
-            Repetir ultimo
-            <select id="lastRepeatRange">
-              <option value="auto">Automatico</option>
-              <option value="6-8">6 a 8</option>
-              <option value="7-10">7 a 10</option>
-              <option value="8-11">8 a 11</option>
-              <option value="0-15">Livre</option>
-            </select>
-          </label>
+        <p class="kicker">Padrao recomendado</p>
+        <h2>Jogo de hoje</h2>
+        <div class="preset-card">
+          <strong>1 aposta simples de 15 numeros</strong>
+          <span>Perfil equilibrado, janela recente de 120 concursos e repeticao automatica do ultimo sorteio.</span>
         </div>
-        <button id="generate">Gerar jogos</button>
+        <button id="generate">Gerar jogo recomendado</button>
         <p class="note" id="strategyNote">A recomendacao pratica para quem joga pouco e gerar 1 jogo forte, equilibrado e diferente dos jogos ja registrados.</p>
+
+        <details class="advanced-settings">
+          <summary>Ajustes avancados</summary>
+          <div class="control-grid">
+            <label>
+              Quantidade
+              <input id="gameCount" type="number" min="1" max="100" value="1">
+            </label>
+            <label>
+              Janela recente
+              <input id="recentWindow" type="number" min="10" max="500" value="120">
+            </label>
+            <label>
+              Numeros
+              <select id="gameSize">
+                <option value="15">15 numeros</option>
+                <option value="16">16 numeros</option>
+                <option value="17">17 numeros</option>
+                <option value="18">18 numeros</option>
+                <option value="19">19 numeros</option>
+                <option value="20">20 numeros</option>
+              </select>
+            </label>
+            <label>
+              Perfil
+              <select id="strategy">
+                <option value="balanced">Equilibrado</option>
+                <option value="hot">Mais sorteados</option>
+                <option value="overdue">Mais atrasados</option>
+                <option value="mixed">Misto agressivo</option>
+              </select>
+            </label>
+            <label>
+              Modo
+              <select id="generationMode">
+                <option value="daily">1 jogo do dia</option>
+                <option value="diversified">Diversificar jogos</option>
+                <option value="closure20">Base 20 amarrada</option>
+              </select>
+            </label>
+            <label>
+              Limite diario
+              <input id="dailyBudget" type="number" min="0" step="0.50" value="3.50">
+            </label>
+            <label>
+              Repetir ultimo
+              <select id="lastRepeatRange">
+                <option value="auto">Automatico</option>
+                <option value="6-8">6 a 8</option>
+                <option value="7-10">7 a 10</option>
+                <option value="8-11">8 a 11</option>
+                <option value="0-15">Livre</option>
+              </select>
+            </label>
+          </div>
+        </details>
       </section>
 
       <section class="panel wide daily-panel">

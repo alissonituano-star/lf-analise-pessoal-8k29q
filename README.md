@@ -101,6 +101,15 @@ Ele executa `npm run sync`, que baixa os resultados pelo seu computador, cria co
 - Modo `Base 20 amarrada`, criando jogos dentro de uma base forte de 20 dezenas.
 - Filtro anti-jogo-fraco para soma, paridade, altos/baixos, sequencias e concentracao.
 - Diario local de jogos, com conferencia automatica de acertos quando o resultado entra na base.
+- Backup do diario em arquivo `.json`, para exportar/importar seus jogos salvos antes da sincronizacao online.
+
+## Historico de jogos pessoais
+
+Hoje os jogos registrados ficam salvos no navegador do proprio aparelho. Isso funciona sem conta e sem servidor, mas cada aparelho tem seu proprio historico.
+
+Para nao perder seus registros, use os botoes `Exportar` e `Importar` na area `Historico pessoal`.
+
+Na proxima etapa, o Supabase pode entrar para sincronizar o historico entre computador e celular usando uma base online privada.
 
 ## Estrategia recomendada
 

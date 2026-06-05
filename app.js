@@ -564,6 +564,7 @@ function savePlayedGames() {
       score: Number(game.score.toFixed(2)),
       mode: $("#generationMode").value,
       strategy: $("#strategy").value,
+      cost: estimatedGameCost(game.numbers.length),
       targetContest,
       createdAt: now,
     });
@@ -578,6 +579,7 @@ function savePlayedGames() {
 
 function renderHistory() {
   const entries = getPlayedGames();
+  renderHistoryStats(entries);
   if (!entries.length) {
     $("#history").innerHTML = `<div class="empty-state">Nenhum jogo registrado ainda.</div>`;
     return;
@@ -598,6 +600,63 @@ function renderHistory() {
       </article>
     `;
   }).join("");
+}
+
+function entryHits(entry, byContest) {
+  const draw = byContest[entry.targetContest];
+  return draw ? intersectionCount(entry.numbers, draw.numbers) : null;
+}
+
+function renderHistoryStats(entries) {
+  const container = $("#historyStats");
+  if (!entries.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const byContest = Object.fromEntries(state.analysis.sorted.map((draw) => [draw.contest, draw]));
+  const resolved = entries
+    .map((entry) => ({ ...entry, hits: entryHits(entry, byContest) }))
+    .filter((entry) => entry.hits !== null);
+  const pending = entries.length - resolved.length;
+  const totalCost = entries.reduce((total, entry) => total + (entry.cost || estimatedGameCost(entry.numbers.length)), 0);
+  const bestHits = resolved.length ? Math.max(...resolved.map((entry) => entry.hits)) : "-";
+  const avgHits = resolved.length ? average(resolved.map((entry) => entry.hits)).toFixed(2) : "-";
+  const strategyScores = {};
+
+  resolved.forEach((entry) => {
+    const key = entry.strategy || "sem perfil";
+    strategyScores[key] ||= { total: 0, count: 0, best: 0 };
+    strategyScores[key].total += entry.hits;
+    strategyScores[key].count += 1;
+    strategyScores[key].best = Math.max(strategyScores[key].best, entry.hits);
+  });
+
+  const bestStrategy = Object.entries(strategyScores)
+    .map(([strategy, stats]) => ({
+      strategy,
+      avg: stats.total / stats.count,
+      best: stats.best,
+    }))
+    .sort((a, b) => b.avg - a.avg)[0];
+
+  container.innerHTML = `
+    <div><strong>${entries.length}</strong><small>jogos registrados</small></div>
+    <div><strong>R$ ${totalCost.toFixed(2).replace(".", ",")}</strong><small>gasto estimado</small></div>
+    <div><strong>${bestHits}</strong><small>melhor acerto</small></div>
+    <div><strong>${avgHits}</strong><small>media de acertos</small></div>
+    <div><strong>${pending}</strong><small>aguardando resultado</small></div>
+    <div><strong>${bestStrategy ? strategyLabel(bestStrategy.strategy) : "-"}</strong><small>melhor perfil pessoal</small></div>
+  `;
+}
+
+function strategyLabel(strategy) {
+  return {
+    balanced: "Equilibrado",
+    hot: "Mais sorteados",
+    overdue: "Mais atrasados",
+    mixed: "Misto agressivo",
+  }[strategy] || strategy;
 }
 
 function clearHistory() {

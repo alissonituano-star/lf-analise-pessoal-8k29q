@@ -618,6 +618,35 @@ button:disabled {
   margin-top: 16px;
 }
 
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.history-stats div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--soft);
+}
+
+.history-stats strong,
+.history-stats small {
+  display: block;
+}
+
+.history-stats strong {
+  font-size: 18px;
+}
+
+.history-stats small {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
 .history-item {
   display: grid;
   grid-template-columns: minmax(120px, 160px) 1fr minmax(120px, 150px);

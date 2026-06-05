@@ -78,6 +78,16 @@
             Limite diario
             <input id="dailyBudget" type="number" min="0" step="0.50" value="3.50">
           </label>
+          <label>
+            Repetir ultimo
+            <select id="lastRepeatRange">
+              <option value="auto">Automatico</option>
+              <option value="6-8">6 a 8</option>
+              <option value="7-10">7 a 10</option>
+              <option value="8-11">8 a 11</option>
+              <option value="0-15">Livre</option>
+            </select>
+          </label>
         </div>
         <button id="generate">Gerar jogos</button>
         <p class="note" id="strategyNote">A recomendacao pratica para quem joga pouco e gerar 1 jogo forte, equilibrado e diferente dos jogos ja registrados.</p>
@@ -165,6 +175,7 @@
         </div>
         <p class="helper">Compara os jogos sugeridos contra os ultimos concursos. Serve para avaliar a estrategia, nao para prever o proximo resultado.</p>
         <div id="backtest" class="backtest"></div>
+        <div id="strategyBacktest" class="strategy-backtest"></div>
       </section>
 
       <section class="panel wide">

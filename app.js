@@ -114,6 +114,8 @@ function gameIssues(numbers, analysis) {
   const profile = gameProfile(numbers);
   const latest = analysis.sorted[0]?.numbers || [];
   const repeatLatest = intersectionCount(numbers, latest);
+  const maxOldSimilarity = maxHistoricalSimilarity(numbers, analysis);
+  const [minRepeat, maxRepeat] = selectedLastRepeatRange(numbers.length);
   const idealHalf = numbers.length / 2;
   const issues = [];
 
@@ -123,6 +125,8 @@ function gameIssues(numbers, analysis) {
   if (profile.sequence >= 6) issues.push("sequencia longa");
   if (profile.rows.some((value) => value === 0 || value > 5)) issues.push("linhas concentradas");
   if (repeatLatest > Math.ceil(numbers.length * 0.75)) issues.push("repete demais o ultimo sorteio");
+  if (repeatLatest < minRepeat || repeatLatest > maxRepeat) issues.push("fora da faixa de repeticao do ultimo");
+  if (maxOldSimilarity >= 14) issues.push("muito parecido com concurso antigo");
   return issues;
 }
 
@@ -194,6 +198,40 @@ function analyze(results, recentWindow) {
     minSum: Math.min(...sums),
     maxSum: Math.max(...sums),
   };
+}
+
+function selectedLastRepeatRange(size) {
+  const value = $("#lastRepeatRange")?.value || "auto";
+  if (value === "auto") {
+    if (size <= 15) return [7, 10];
+    if (size <= 17) return [8, 12];
+    return [9, 14];
+  }
+  return value.split("-").map(Number);
+}
+
+function maxHistoricalSimilarity(numbers, analysis, limit = 500) {
+  return analysis.sorted.slice(0, limit).reduce((best, draw) => (
+    Math.max(best, intersectionCount(numbers, draw.numbers))
+  ), 0);
+}
+
+function explainGame(numbers, analysis) {
+  const latest = analysis.sorted[0]?.numbers || [];
+  const profile = gameProfile(numbers);
+  const ranked = Object.fromEntries(analysis.ranking.map((item, index) => [item.number, index + 1]));
+  const topNumbers = numbers.filter((number) => ranked[number] <= 10).length;
+  const overdue = numbers.filter((number) => (analysis.ranking.find((item) => item.number === number)?.delay || 0) >= 4).length;
+  const repeatLatest = intersectionCount(numbers, latest);
+  const similarity = maxHistoricalSimilarity(numbers, analysis);
+  return [
+    `soma ${profile.sum}, media historica ${Math.round(analysis.avgSum)}`,
+    `${profile.odd}/${profile.even} impares/pares`,
+    `${topNumbers} numeros no top 10 do ranking`,
+    `${overdue} numeros com atraso relevante`,
+    `${repeatLatest} repetidos do ultimo sorteio`,
+    `maximo ${similarity} iguais a concurso antigo`,
+  ];
 }
 
 function scoreGame(numbers, analysis, strategy) {
@@ -397,6 +435,10 @@ function renderGames() {
         <span>${describeGame(game.numbers)}</span>
         <small>${gameIssues(game.numbers, state.analysis).length ? `Alertas: ${gameIssues(game.numbers, state.analysis).join(", ")}` : "Sem alertas do filtro anti-jogo-fraco"}</small>
       </div>
+      <div class="game-explain">
+        <strong>Por que este jogo?</strong>
+        <ul>${explainGame(game.numbers, state.analysis).map((item) => `<li>${item}</li>`).join("")}</ul>
+      </div>
     </article>
   `).join("");
 }
@@ -447,6 +489,61 @@ function renderBacktest() {
     <div><strong>${hits[13] || 0}</strong><small>resultados com 13 acertos</small></div>
     <div><strong>${hits[14] || 0}</strong><small>resultados com 14 acertos</small></div>
     <div><strong>${hits[15] || 0}</strong><small>resultados com 15 acertos</small></div>
+  `;
+  renderStrategyBacktest();
+}
+
+function buildStrategyGame(strategy, drawIndex) {
+  const historical = state.analysis.sorted.slice(drawIndex + 1);
+  if (historical.length < 120) return null;
+  const analysis = analyze(historical, Math.min(120, historical.length));
+  const candidate = createCandidate(analysis, strategy, 15);
+  return candidate.numbers;
+}
+
+function renderStrategyBacktest() {
+  const strategies = [
+    ["balanced", "Equilibrado"],
+    ["hot", "Mais sorteados"],
+    ["overdue", "Mais atrasados"],
+    ["mixed", "Misto agressivo"],
+  ];
+  const sampleSize = Math.min(80, state.analysis.sorted.length - 140);
+  if (sampleSize <= 10) {
+    $("#strategyBacktest").innerHTML = "";
+    return;
+  }
+
+  const rows = strategies.map(([strategy, label]) => {
+    const matches = [];
+    for (let index = 0; index < sampleSize; index += 1) {
+      const game = buildStrategyGame(strategy, index);
+      if (!game) continue;
+      matches.push(intersectionCount(game, state.analysis.sorted[index].numbers));
+    }
+    const buckets = { 11: 0, 12: 0, 13: 0, 14: 0, 15: 0 };
+    matches.forEach((hits) => {
+      if (hits >= 11) buckets[hits] += 1;
+    });
+    return {
+      label,
+      avg: average(matches),
+      best: Math.max(...matches),
+      buckets,
+    };
+  }).sort((a, b) => b.avg - a.avg);
+
+  $("#strategyBacktest").innerHTML = `
+    <h3>Ranking de estrategias</h3>
+    <div class="strategy-table">
+      ${rows.map((row) => `
+        <div>
+          <strong>${row.label}</strong>
+          <span>media ${row.avg.toFixed(2)} | melhor ${row.best}</span>
+          <small>11+: ${row.buckets[11] + row.buckets[12] + row.buckets[13] + row.buckets[14] + row.buckets[15]} | 13+: ${row.buckets[13] + row.buckets[14] + row.buckets[15]} | 15: ${row.buckets[15]}</small>
+        </div>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -659,6 +756,7 @@ $("#recentWindow").addEventListener("change", refreshAnalysis);
 $("#strategy").addEventListener("change", generateGames);
 $("#gameSize").addEventListener("change", generateGames);
 $("#generationMode").addEventListener("change", generateGames);
+$("#lastRepeatRange").addEventListener("change", generateGames);
 $("#dailyBudget").addEventListener("change", updateStrategyNote);
 $("#downloadCsv").addEventListener("click", downloadCsv);
 $("#copyGames").addEventListener("click", copyGames);

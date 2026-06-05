@@ -501,6 +501,29 @@ button:disabled {
   line-height: 1.35;
 }
 
+.game-explain {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.game-explain strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.game-explain ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 5px 14px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .advice {
   border-left: 4px solid var(--accent);
 }
@@ -544,6 +567,46 @@ button:disabled {
 
 .backtest small {
   display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.strategy-backtest {
+  margin-top: 16px;
+}
+
+.strategy-backtest h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.strategy-table {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.strategy-table div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdfb;
+}
+
+.strategy-table strong,
+.strategy-table span,
+.strategy-table small {
+  display: block;
+}
+
+.strategy-table span {
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.strategy-table small {
   margin-top: 5px;
   color: var(--muted);
   line-height: 1.35;
@@ -820,6 +883,11 @@ button:disabled {
 
   .game-score {
     text-align: left;
+  }
+
+  .game-explain ul,
+  .strategy-table {
+    grid-template-columns: 1fr;
   }
 
   .coverage {

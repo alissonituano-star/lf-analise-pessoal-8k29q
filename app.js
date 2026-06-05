@@ -7,6 +7,7 @@ const state = {
   games: [],
   installPrompt: null,
   supabaseSession: null,
+  strategyBacktestReady: false,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -339,6 +340,7 @@ function createCandidate(analysis, strategy, size) {
 }
 
 function generateGames() {
+  state.strategyBacktestReady = false;
   const mode = $("#generationMode").value;
   const requestedCount = Number($("#gameCount").value);
   const count = mode === "daily" ? 1 : requestedCount;
@@ -589,7 +591,13 @@ function renderBacktest() {
     <div><strong>${hits[14] || 0}</strong><small>resultados com 14 acertos</small></div>
     <div><strong>${hits[15] || 0}</strong><small>resultados com 15 acertos</small></div>
   `;
-  renderStrategyBacktest();
+  $("#strategyBacktest").innerHTML = `
+    <div class="strategy-backtest-placeholder">
+      <span>Ranking de estrategias sob demanda para a tela abrir mais rapido.</span>
+      <button class="ghost action-button" id="runStrategyBacktest">Calcular ranking</button>
+    </div>
+  `;
+  $("#runStrategyBacktest").addEventListener("click", renderStrategyBacktest);
 }
 
 function buildStrategyGame(strategy, drawIndex) {
@@ -601,13 +609,24 @@ function buildStrategyGame(strategy, drawIndex) {
 }
 
 function renderStrategyBacktest() {
+  const button = $("#runStrategyBacktest");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Calculando...";
+  }
+  $("#strategyBacktest").innerHTML = `<div class="empty-state">Calculando ranking de estrategias...</div>`;
+
+  setTimeout(() => calculateStrategyBacktest(), 30);
+}
+
+function calculateStrategyBacktest() {
   const strategies = [
     ["balanced", "Equilibrado"],
     ["hot", "Mais sorteados"],
     ["overdue", "Mais atrasados"],
     ["mixed", "Misto agressivo"],
   ];
-  const sampleSize = Math.min(80, state.analysis.sorted.length - 140);
+  const sampleSize = Math.min(30, state.analysis.sorted.length - 140);
   if (sampleSize <= 10) {
     $("#strategyBacktest").innerHTML = "";
     return;

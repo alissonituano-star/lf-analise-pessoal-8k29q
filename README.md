@@ -172,6 +172,8 @@ Para criar o arquivo com seguranca:
 2. Renomeie a copia para `supabase-service-role.key`.
 3. Substitua o conteudo pela chave `service_role` ou `sb_secret`.
 
+Esse arquivo deve ficar na raiz do projeto, no mesmo nivel de `package.json`. Nao coloque dentro de `assets`, porque `assets` e uma pasta publica do site.
+
 Para instalar o agendamento automatico no Windows:
 
 ```powershell

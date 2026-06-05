@@ -1,6 +1,7 @@
 node_modules/
 .env
 supabase-service-role.key
+**/supabase-service-role.key
 logs/
 .DS_Store
 Thumbs.db

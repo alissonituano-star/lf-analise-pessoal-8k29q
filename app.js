@@ -353,7 +353,7 @@ function renderSummary() {
   $("#metricContests").textContent = data.total_contests || results.length;
   $("#metricLatest").textContent = data.latest_contest || results[0].contest;
   $("#metricAvgSum").textContent = Math.round(state.analysis.avgSum);
-  $("#metricRange").textContent = `${results.at(-1).date} - ${results[0].date}`;
+  $("#metricRange").innerHTML = `<b>${results.at(-1).date}</b><em>ate</em><b>${results[0].date}</b>`;
   $("#metricUpdated").textContent = `Atualizado em: ${formatUpdatedAt(data.updated_at)}`;
   $("#updateMode").textContent = isLocalServer()
     ? "Neste modo, o botao Atualizar baixa os resultados agora."
@@ -393,7 +393,7 @@ function renderGames() {
       </div>
       <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
       <div class="game-score">
-        <strong>${game.score.toFixed(2)} pontos</strong>
+        <strong>Nota estatistica: ${game.score.toFixed(2)}</strong>
         <span>${describeGame(game.numbers)}</span>
         <small>${gameIssues(game.numbers, state.analysis).length ? `Alertas: ${gameIssues(game.numbers, state.analysis).join(", ")}` : "Sem alertas do filtro anti-jogo-fraco"}</small>
       </div>

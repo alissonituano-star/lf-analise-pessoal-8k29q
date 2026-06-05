@@ -252,6 +252,29 @@ button:disabled {
   line-height: 1.05;
 }
 
+.metrics span b,
+.metrics span em {
+  display: block;
+  font-style: normal;
+}
+
+.metrics span em {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.metric-period span {
+  font-size: 23px;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+
+.metric-period small {
+  margin-top: 8px;
+}
+
 .metrics small {
   display: block;
   margin-top: 4px;
@@ -470,7 +493,7 @@ button:disabled {
 
 .game-score strong {
   color: var(--ink);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .game-score small {
@@ -714,6 +737,10 @@ button:disabled {
 
   .metrics span {
     font-size: 22px;
+  }
+
+  .metric-period span {
+    font-size: 21px;
   }
 
   .metrics small {

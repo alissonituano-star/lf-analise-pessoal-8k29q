@@ -1,9 +1,10 @@
-const CACHE_NAME = "gerador-lotofacil-v7";
+const CACHE_NAME = "gerador-lotofacil-v8";
 const APP_FILES = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./supabase-config.js",
   "./manifest.webmanifest",
   "./data/lotofacil.json",
   "./assets/icon.svg",

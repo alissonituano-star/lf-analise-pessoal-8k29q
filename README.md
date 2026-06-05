@@ -111,6 +111,24 @@ Para nao perder seus registros, use os botoes `Exportar` e `Importar` na area `H
 
 Na proxima etapa, o Supabase pode entrar para sincronizar o historico entre computador e celular usando uma base online privada.
 
+## Sincronizar com Supabase
+
+O projeto ja esta preparado para sincronizar o diario pessoal com Supabase.
+
+1. Crie um projeto no Supabase.
+2. Abra `SQL Editor`.
+3. Cole e execute o conteudo de `supabase-schema.sql`.
+4. Abra `Authentication` > `Users`.
+5. Crie um usuario para voce com email e senha.
+6. Abra `supabase-config.js`.
+7. Preencha `url` e `anonKey` com os dados do projeto.
+8. Publique novamente no GitHub.
+9. No sistema, abra `Diario de jogos`, entre com email/senha e toque em `Sincronizar`.
+
+Para usar no celular e no computador com o mesmo diario, use o mesmo email e senha nos dois aparelhos.
+
+Importante: a chave `anonKey` do Supabase pode ficar no app porque quem protege seus dados sao as politicas RLS do arquivo `supabase-schema.sql`.
+
 ## Estrategia recomendada
 
 Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.

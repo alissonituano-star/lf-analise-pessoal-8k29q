@@ -206,6 +206,25 @@
           </div>
         </div>
         <p class="helper">Registre o que voce jogou. Quando o concurso estiver na base, o sistema confere os acertos automaticamente.</p>
+        <div class="cloud-sync">
+          <div>
+            <strong>Nuvem pessoal</strong>
+            <small id="cloudStatus">Verificando sincronizacao...</small>
+          </div>
+          <label>
+            Email
+            <input id="cloudEmail" type="email" autocomplete="email" placeholder="seu@email.com">
+          </label>
+          <label>
+            Senha
+            <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Senha do Supabase">
+          </label>
+          <div class="button-row">
+            <button class="ghost action-button" id="cloudLogin">Entrar</button>
+            <button class="ghost action-button" id="cloudLogout" hidden>Sair</button>
+            <button class="ghost action-button" id="syncCloud">Sincronizar</button>
+          </div>
+        </div>
         <div id="historyStats" class="history-stats"></div>
         <div id="history" class="history"></div>
         <input id="historyFile" type="file" accept="application/json,.json,.csv,text/csv" hidden>
@@ -213,6 +232,7 @@
     </main>
 
     <div class="toast" id="toast" hidden></div>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

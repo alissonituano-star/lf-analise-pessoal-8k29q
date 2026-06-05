@@ -1,10 +1,12 @@
 const NUMBERS = Array.from({ length: 25 }, (_, index) => index + 1);
 const STORAGE_KEY = "lotofacil-played-games-v1";
+const SUPABASE_SESSION_STORAGE = "lotofacil-supabase-session-v1";
 const state = {
   data: null,
   analysis: null,
   games: [],
   installPrompt: null,
+  supabaseSession: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -28,6 +30,52 @@ function getPlayedGames() {
 
 function setPlayedGames(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, 250)));
+}
+
+function supabaseConfig() {
+  const config = window.LOTOFACIL_SUPABASE || {};
+  return {
+    url: (config.url || "").replace(/\/$/, ""),
+    anonKey: config.anonKey || "",
+    table: config.table || "played_games",
+  };
+}
+
+function isSupabaseReady() {
+  const config = supabaseConfig();
+  return Boolean(config.url && config.anonKey && !config.url.includes("SEU-PROJETO"));
+}
+
+function setCloudStatus(message, type = "muted") {
+  const status = $("#cloudStatus");
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.type = type;
+}
+
+function getStoredSupabaseSession() {
+  try {
+    return JSON.parse(localStorage.getItem(SUPABASE_SESSION_STORAGE) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function setSupabaseSession(session) {
+  state.supabaseSession = session;
+  if (session) localStorage.setItem(SUPABASE_SESSION_STORAGE, JSON.stringify(session));
+  else localStorage.removeItem(SUPABASE_SESSION_STORAGE);
+  renderCloudAuth();
+}
+
+function renderCloudAuth() {
+  const signedIn = Boolean(state.supabaseSession?.access_token);
+  const email = state.supabaseSession?.user?.email;
+  if ($("#cloudEmail")) $("#cloudEmail").disabled = signedIn;
+  if ($("#cloudPassword")) $("#cloudPassword").disabled = signedIn;
+  if ($("#cloudLogin")) $("#cloudLogin").hidden = signedIn;
+  if ($("#cloudLogout")) $("#cloudLogout").hidden = !signedIn;
+  if (signedIn) setCloudStatus(`Conectado como ${email}.`, "ok");
 }
 
 function average(values) {
@@ -764,6 +812,164 @@ async function importHistory(event) {
   }
 }
 
+function supabaseHeaders(useSession = true) {
+  const config = supabaseConfig();
+  const token = useSession && state.supabaseSession?.access_token
+    ? state.supabaseSession.access_token
+    : config.anonKey;
+  return {
+    apikey: config.anonKey,
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+}
+
+function normalizeEntry(entry) {
+  return {
+    user_id: state.supabaseSession.user.id,
+    game_key: entry.key || gameKey(entry.numbers || []),
+    numbers: entry.numbers || [],
+    score: entry.score ?? null,
+    mode: entry.mode || "",
+    strategy: entry.strategy || "",
+    cost: entry.cost ?? null,
+    target_contest: entry.targetContest || null,
+    played_at: entry.createdAt || new Date().toISOString(),
+  };
+}
+
+function entryFromCloud(row) {
+  return {
+    key: row.game_key,
+    numbers: row.numbers || [],
+    score: row.score ?? null,
+    mode: row.mode || "",
+    strategy: row.strategy || "",
+    cost: row.cost ?? null,
+    targetContest: row.target_contest,
+    createdAt: row.played_at,
+  };
+}
+
+async function fetchCloudEntries() {
+  const config = supabaseConfig();
+  const userId = state.supabaseSession.user.id;
+  const url = `${config.url}/rest/v1/${config.table}?user_id=eq.${encodeURIComponent(userId)}&select=*`;
+  const response = await fetch(url, { headers: supabaseHeaders() });
+  if (!response.ok) throw new Error("Nao consegui baixar o diario da nuvem.");
+  return response.json();
+}
+
+async function pushCloudEntries(entries) {
+  if (!entries.length) return [];
+  const config = supabaseConfig();
+  const rows = entries.map((entry) => normalizeEntry(entry));
+  const response = await fetch(`${config.url}/rest/v1/${config.table}?on_conflict=user_id,game_key`, {
+    method: "POST",
+    headers: {
+      ...supabaseHeaders(),
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify(rows),
+  });
+  if (!response.ok) throw new Error("Nao consegui enviar o diario para a nuvem.");
+  return response.json();
+}
+
+function mergeHistory(localEntries, cloudEntries) {
+  const byKey = new Map();
+  [...cloudEntries.map(entryFromCloud), ...localEntries].forEach((entry) => {
+    if (!entry?.key) return;
+    byKey.set(entry.key, entry);
+  });
+  return [...byKey.values()]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 250);
+}
+
+async function syncCloudHistory() {
+  if (!isSupabaseReady()) {
+    setCloudStatus("Configure o Supabase primeiro: URL e anon key no arquivo supabase-config.js.", "warn");
+    showToast("Supabase ainda nao configurado.");
+    return;
+  }
+  if (!state.supabaseSession?.access_token) {
+    setCloudStatus("Entre com seu email e senha antes de sincronizar.", "warn");
+    showToast("Faca login no Supabase primeiro.");
+    return;
+  }
+
+  const button = $("#syncCloud");
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Sincronizando...";
+  setCloudStatus("Sincronizando diario pessoal...", "muted");
+
+  try {
+    const localEntries = getPlayedGames();
+    await pushCloudEntries(localEntries);
+    const cloudEntries = await fetchCloudEntries();
+    const merged = mergeHistory(localEntries, cloudEntries);
+    setPlayedGames(merged);
+    await pushCloudEntries(merged);
+    renderHistory();
+    setCloudStatus(`Nuvem sincronizada: ${merged.length} jogo(s) no diario.`, "ok");
+    showToast("Diario sincronizado com Supabase.");
+  } catch (error) {
+    setCloudStatus(error.message, "error");
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function loginCloud() {
+  if (!isSupabaseReady()) {
+    setCloudStatus("Configure o Supabase primeiro: URL e anon key no arquivo supabase-config.js.", "warn");
+    showToast("Supabase ainda nao configurado.");
+    return;
+  }
+  const email = $("#cloudEmail").value.trim();
+  const password = $("#cloudPassword").value;
+  if (!email || !password) {
+    showToast("Informe email e senha.");
+    return;
+  }
+
+  const button = $("#cloudLogin");
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Entrando...";
+
+  try {
+    const config = supabaseConfig();
+    const response = await fetch(`${config.url}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: supabaseHeaders(false),
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error("Login nao autorizado. Confira email e senha.");
+    const session = await response.json();
+    setSupabaseSession(session);
+    showToast("Conectado ao Supabase.");
+  } catch (error) {
+    setCloudStatus(error.message, "error");
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+function logoutCloud() {
+  setSupabaseSession(null);
+  if ($("#cloudPassword")) $("#cloudPassword").value = "";
+  setCloudStatus("Voce saiu da nuvem. O diario local continua neste aparelho.", "muted");
+  showToast("Nuvem desconectada.");
+}
+
 function downloadCsv() {
   const header = "numero,frequencia,percentual,frequencia_recente,atraso,pontuacao";
   const rows = state.analysis.ranking.map((item) => [
@@ -902,6 +1108,16 @@ function refreshAnalysis() {
 
 async function init() {
   try {
+    state.supabaseSession = getStoredSupabaseSession();
+    if (state.supabaseSession?.user?.email && $("#cloudEmail")) {
+      $("#cloudEmail").value = state.supabaseSession.user.email;
+    }
+    renderCloudAuth();
+    if (!state.supabaseSession) {
+      setCloudStatus(isSupabaseReady()
+        ? "Entre com seu email e senha para sincronizar."
+        : "Nuvem opcional ainda nao configurada. O diario continua salvo neste aparelho.");
+    }
     await loadData();
   } catch (error) {
     $("#status").textContent = error.message;
@@ -924,6 +1140,9 @@ $("#exportHistory").addEventListener("click", exportHistory);
 $("#importHistory").addEventListener("click", importHistoryClick);
 $("#historyFile").addEventListener("change", importHistory);
 $("#clearHistory").addEventListener("click", clearHistory);
+$("#syncCloud").addEventListener("click", syncCloudHistory);
+$("#cloudLogin").addEventListener("click", loginCloud);
+$("#cloudLogout").addEventListener("click", logoutCloud);
 $("#forceUpdate").addEventListener("click", forceUpdate);
 installButtons().forEach((button) => button.addEventListener("click", installApp));
 

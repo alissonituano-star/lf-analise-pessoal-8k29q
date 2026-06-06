@@ -604,10 +604,23 @@ function renderGames() {
   $("#games").innerHTML = state.games.map((game) => {
     const profile = gameProfile(game.numbers);
     const repeated = intersectionCount(game.numbers, latest);
+    const selectedNumbers = new Set(game.numbers);
     return `
       <article class="game">
-        <div class="game-title">Jogo ${game.index}</div>
-        <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
+        <div class="game-slip-header">
+          <div>
+            <span>APOSTA RECOMENDADA</span>
+            <strong>Jogo ${game.index}</strong>
+          </div>
+          <b>15 marcadas</b>
+        </div>
+        <div class="game-slip-board">
+          ${NUMBERS.map((number) => `
+            <span class="game-slip-number ${selectedNumbers.has(number) ? "is-selected" : ""}">
+              ${formatNumber(number)}
+            </span>
+          `).join("")}
+        </div>
         <div class="game-reasons">
           <span><b>${profile.sum}</b> soma</span>
           <span><b>${profile.odd}/${profile.even}</b> impares/pares</span>

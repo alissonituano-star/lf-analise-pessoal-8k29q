@@ -183,8 +183,31 @@
             <button class="ghost action-button" id="clearHistory">Limpar</button>
           </div>
         </details>
-        <div id="historyStats" class="history-stats"></div>
-        <div id="history" class="history"></div>
+        <div class="history-tabs" role="tablist" aria-label="Diario de jogos">
+          <button class="history-tab is-active" id="dashboardTab" type="button" role="tab" aria-selected="true" aria-controls="dashboardPanel">Dashboard</button>
+          <button class="history-tab" id="historyTab" type="button" role="tab" aria-selected="false" aria-controls="historyPanel">Historico</button>
+        </div>
+        <div id="dashboardPanel" role="tabpanel" aria-labelledby="dashboardTab">
+          <div class="dashboard-toolbar">
+            <div>
+              <strong>Desempenho das suas apostas</strong>
+              <small>Analise baseada nos jogos registrados neste diario.</small>
+            </div>
+            <label>
+              Periodo
+              <select id="dashboardPeriod">
+                <option value="all">Todo o historico</option>
+                <option value="30">Ultimos 30 dias</option>
+                <option value="90">Ultimos 90 dias</option>
+              </select>
+            </label>
+          </div>
+          <div id="historyStats" class="history-stats"></div>
+          <div id="historyDashboard" class="history-dashboard"></div>
+        </div>
+        <div id="historyPanel" role="tabpanel" aria-labelledby="historyTab" hidden>
+          <div id="history" class="history"></div>
+        </div>
         <input id="historyFile" type="file" accept="application/json,.json,.csv,text/csv" hidden>
       </section>
     </main>

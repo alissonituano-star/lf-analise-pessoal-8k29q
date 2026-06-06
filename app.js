@@ -1,6 +1,7 @@
 const NUMBERS = Array.from({ length: 25 }, (_, index) => index + 1);
 const STORAGE_KEY = "lotofacil-played-games-v1";
 const SUPABASE_SESSION_STORAGE = "lotofacil-supabase-session-v1";
+const MAX_HISTORY_ENTRIES = 2000;
 const state = {
   data: null,
   analysis: null,
@@ -30,7 +31,7 @@ function getPlayedGames() {
 }
 
 function setPlayedGames(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, 250)));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY_ENTRIES)));
 }
 
 function supabaseConfig() {
@@ -874,7 +875,7 @@ async function copyDailyGame() {
 
 function renderHistory() {
   const entries = getPlayedGames();
-  renderHistoryStats(entries);
+  renderHistoryDashboard(entries);
   if (!entries.length) {
     $("#history").innerHTML = `<div class="empty-state">Nenhum jogo registrado ainda.</div>`;
     return;
@@ -933,10 +934,23 @@ function entryHits(entry, byContest) {
   return draw ? intersectionCount(entry.numbers, draw.numbers) : null;
 }
 
-function renderHistoryStats(entries) {
+function dashboardEntries(entries) {
+  const period = $("#dashboardPeriod")?.value || "all";
+  if (period === "all") return entries;
+  const cutoff = Date.now() - Number(period) * 24 * 60 * 60 * 1000;
+  return entries.filter((entry) => {
+    const timestamp = new Date(entry.createdAt).getTime();
+    return Number.isNaN(timestamp) || timestamp >= cutoff;
+  });
+}
+
+function renderHistoryDashboard(allEntries) {
+  const entries = dashboardEntries(allEntries);
   const container = $("#historyStats");
+  const dashboard = $("#historyDashboard");
   if (!entries.length) {
     container.innerHTML = "";
+    dashboard.innerHTML = `<div class="empty-state">Nenhum jogo registrado neste periodo.</div>`;
     return;
   }
 
@@ -949,6 +963,17 @@ function renderHistoryStats(entries) {
   const bestHits = resolved.length ? Math.max(...resolved.map((entry) => entry.hits)) : "-";
   const avgHits = resolved.length ? average(resolved.map((entry) => entry.hits)).toFixed(2) : "-";
   const strategyScores = {};
+  const numberUsage = Object.fromEntries(NUMBERS.map((number) => [number, 0]));
+  const hitBuckets = Object.fromEntries(["0-8", "9", "10", "11", "12", "13", "14", "15"].map((key) => [key, 0]));
+  const profiles = entries.map((entry) => gameProfile(entry.numbers));
+  const qualityValues = entries.map((entry) => qualityScore(entry.numbers, state.analysis));
+  const balancedEntries = profiles.filter((profile) => (
+    [7, 8].includes(profile.odd) && [7, 8].includes(profile.low)
+  )).length;
+
+  entries.forEach((entry) => entry.numbers.forEach((number) => {
+    numberUsage[number] += 1;
+  }));
 
   resolved.forEach((entry) => {
     const key = entry.strategy || "sem perfil";
@@ -956,15 +981,24 @@ function renderHistoryStats(entries) {
     strategyScores[key].total += entry.hits;
     strategyScores[key].count += 1;
     strategyScores[key].best = Math.max(strategyScores[key].best, entry.hits);
+    hitBuckets[entry.hits <= 8 ? "0-8" : String(entry.hits)] += 1;
   });
 
-  const bestStrategy = Object.entries(strategyScores)
+  const strategyRows = Object.entries(strategyScores)
     .map(([strategy, stats]) => ({
       strategy,
       avg: stats.total / stats.count,
       best: stats.best,
+      count: stats.count,
     }))
-    .sort((a, b) => b.avg - a.avg)[0];
+    .sort((a, b) => b.avg - a.avg);
+  const bestStrategy = strategyRows[0];
+  const maxBucket = Math.max(...Object.values(hitBuckets), 1);
+  const maxUsage = Math.max(...Object.values(numberUsage), 1);
+  const sortedUsage = Object.entries(numberUsage).sort((a, b) => b[1] - a[1]);
+  const averageSum = average(profiles.map((profile) => profile.sum)).toFixed(1);
+  const averageQuality = Math.round(average(qualityValues));
+  const balancedRate = Math.round(balancedEntries / entries.length * 100);
 
   container.innerHTML = `
     <div><strong>${entries.length}</strong><small>jogos registrados</small></div>
@@ -974,6 +1008,77 @@ function renderHistoryStats(entries) {
     <div><strong>${pending}</strong><small>aguardando resultado</small></div>
     <div><strong>${bestStrategy ? strategyLabel(bestStrategy.strategy) : "-"}</strong><small>melhor perfil pessoal</small></div>
   `;
+
+  dashboard.innerHTML = `
+    <div class="dashboard-grid">
+      <section class="dashboard-block">
+        <div class="dashboard-block-title">
+          <div>
+            <strong>Distribuicao dos acertos</strong>
+            <small>${resolved.length} jogo(s) com resultado conhecido</small>
+          </div>
+        </div>
+        <div class="hit-chart">
+          ${Object.entries(hitBuckets).map(([label, count]) => `
+            <div class="chart-row">
+              <span>${label} acertos</span>
+              <div class="chart-track"><i style="width:${count / maxBucket * 100}%"></i></div>
+              <b>${count}</b>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+      <section class="dashboard-block">
+        <div class="dashboard-block-title">
+          <div>
+            <strong>Qualidade das apostas</strong>
+            <small>Caracteristicas calculadas novamente pelo sistema atual</small>
+          </div>
+        </div>
+        <div class="quality-summary">
+          <div><strong>${averageQuality}/100</strong><small>nota media de equilibrio</small></div>
+          <div><strong>${averageSum}</strong><small>soma media</small></div>
+          <div><strong>${balancedRate}%</strong><small>com paridade e baixos/altos 7/8 ou 8/7</small></div>
+        </div>
+        <div class="strategy-performance">
+          ${strategyRows.length ? strategyRows.map((row) => `
+            <div>
+              <span>${strategyLabel(row.strategy)}</span>
+              <b>${row.avg.toFixed(2)} media</b>
+              <small>${row.count} jogo(s) | melhor ${row.best}</small>
+            </div>
+          `).join("") : `<div class="empty-state">Aguardando resultados para comparar os perfis.</div>`}
+        </div>
+      </section>
+      <section class="dashboard-block dashboard-block-wide">
+        <div class="dashboard-block-title">
+          <div>
+            <strong>Dezenas que voce mais jogou</strong>
+            <small>Ajuda a perceber concentracao excessiva nas mesmas escolhas.</small>
+          </div>
+        </div>
+        <div class="usage-grid">
+          ${sortedUsage.map(([number, count]) => `
+            <div class="usage-number">
+              <span>${formatNumber(number)}</span>
+              <div class="usage-track"><i style="width:${count / maxUsage * 100}%"></i></div>
+              <b>${count}</b>
+            </div>
+          `).join("")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function selectHistoryTab(tabName) {
+  const dashboardSelected = tabName === "dashboard";
+  $("#dashboardPanel").hidden = !dashboardSelected;
+  $("#historyPanel").hidden = dashboardSelected;
+  $("#dashboardTab").classList.toggle("is-active", dashboardSelected);
+  $("#historyTab").classList.toggle("is-active", !dashboardSelected);
+  $("#dashboardTab").setAttribute("aria-selected", String(dashboardSelected));
+  $("#historyTab").setAttribute("aria-selected", String(!dashboardSelected));
 }
 
 function strategyLabel(strategy) {
@@ -1114,10 +1219,19 @@ function entryFromCloud(row) {
 async function fetchCloudEntries() {
   const config = supabaseConfig();
   const userId = state.supabaseSession.user.id;
-  const url = `${config.url}/rest/v1/${config.table}?user_id=eq.${encodeURIComponent(userId)}&select=*`;
-  const response = await fetch(url, { headers: supabaseHeaders() });
-  if (!response.ok) throw await supabaseError(response, "Nao consegui baixar o diario da nuvem");
-  return response.json();
+  const entries = [];
+  const pageSize = 500;
+
+  while (entries.length < MAX_HISTORY_ENTRIES) {
+    const url = `${config.url}/rest/v1/${config.table}?user_id=eq.${encodeURIComponent(userId)}&select=*&order=played_at.desc&limit=${pageSize}&offset=${entries.length}`;
+    const response = await fetch(url, { headers: supabaseHeaders() });
+    if (!response.ok) throw await supabaseError(response, "Nao consegui baixar o diario da nuvem");
+    const page = await response.json();
+    entries.push(...page);
+    if (page.length < pageSize) break;
+  }
+
+  return entries;
 }
 
 async function pushCloudEntries(entries) {
@@ -1144,25 +1258,25 @@ function mergeHistory(localEntries, cloudEntries) {
   });
   return [...byKey.values()]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    .slice(0, 250);
+    .slice(0, MAX_HISTORY_ENTRIES);
 }
 
-async function syncCloudHistory() {
+async function syncCloudHistory(silent = false) {
   if (!isSupabaseReady()) {
     setCloudStatus("Configure o Supabase primeiro: URL e anon key no arquivo supabase-config.js.", "warn");
-    showToast("Supabase ainda nao configurado.");
+    if (!silent) showToast("Supabase ainda nao configurado.");
     return;
   }
   if (!state.supabaseSession?.access_token) {
     setCloudStatus("Entre com seu email e senha antes de sincronizar.", "warn");
-    showToast("Faca login no Supabase primeiro.");
+    if (!silent) showToast("Faca login no Supabase primeiro.");
     return;
   }
   const hasValidSession = await ensureCloudSession();
   if (!hasValidSession) {
     setSupabaseSession(null);
     setCloudStatus("Sessao expirada. Entre novamente antes de sincronizar.", "warn");
-    showToast("Sessao expirada. Faca login novamente.");
+    if (!silent) showToast("Sessao expirada. Faca login novamente.");
     return;
   }
 
@@ -1179,15 +1293,15 @@ async function syncCloudHistory() {
     const merged = mergeHistory(localEntries, cloudEntries);
     setPlayedGames(merged);
     await pushCloudEntries(merged);
-    renderHistory();
+    generateGames();
     setCloudStatus(`Nuvem sincronizada: ${merged.length} jogo(s) no diario.`, "ok");
-    showToast("Diario sincronizado com Supabase.");
+    if (!silent) showToast("Diario sincronizado com Supabase.");
   } catch (error) {
     if (error.message.includes("JWT") || error.message.includes("expired") || error.message.includes("401")) {
       setSupabaseSession(null);
     }
     setCloudStatus(error.message, "error");
-    showToast(error.message);
+    if (!silent) showToast(error.message);
   } finally {
     button.disabled = false;
     button.textContent = originalText;
@@ -1223,6 +1337,7 @@ async function loginCloud() {
     const session = await response.json();
     setSupabaseSession(session);
     showToast("Conectado ao Supabase.");
+    syncCloudHistory(true);
   } catch (error) {
     setCloudStatus(error.message, "error");
     showToast(error.message);
@@ -1490,6 +1605,7 @@ async function init() {
         : "Nuvem opcional ainda nao configurada. O diario continua salvo neste aparelho.");
     }
     await loadData();
+    if (state.supabaseSession?.access_token) syncCloudHistory(true);
   } catch (error) {
     $("#status").textContent = error.message;
   }
@@ -1508,7 +1624,10 @@ $("#exportHistory").addEventListener("click", exportHistory);
 $("#importHistory").addEventListener("click", importHistoryClick);
 $("#historyFile").addEventListener("change", importHistory);
 $("#clearHistory").addEventListener("click", clearHistory);
-$("#syncCloud").addEventListener("click", syncCloudHistory);
+$("#dashboardTab").addEventListener("click", () => selectHistoryTab("dashboard"));
+$("#historyTab").addEventListener("click", () => selectHistoryTab("history"));
+$("#dashboardPeriod").addEventListener("change", () => renderHistoryDashboard(getPlayedGames()));
+$("#syncCloud").addEventListener("click", () => syncCloudHistory());
 $("#cloudLogin").addEventListener("click", loginCloud);
 $("#cloudLogout").addEventListener("click", logoutCloud);
 $("#forceUpdate").addEventListener("click", forceUpdate);

@@ -137,10 +137,14 @@
             <p class="kicker">Conferir sorteio</p>
             <h2>Caracteristicas do concurso</h2>
           </div>
-          <label class="draw-filter">
-            Concurso
-            <select id="drawSelector"></select>
-          </label>
+          <div class="draw-navigation">
+            <button class="ghost draw-nav-button" id="drawOlder" type="button" aria-label="Concurso anterior" title="Concurso anterior">&larr;</button>
+            <label class="draw-filter">
+              Concurso
+              <select id="drawSelector"></select>
+            </label>
+            <button class="ghost draw-nav-button" id="drawNewer" type="button" aria-label="Proximo concurso" title="Proximo concurso">&rarr;</button>
+          </div>
         </div>
         <div id="drawAnalysis" class="draw-analysis"></div>
       </section>

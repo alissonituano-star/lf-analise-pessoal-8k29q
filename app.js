@@ -524,40 +524,56 @@ function renderDrawAnalyzer() {
   const previous = state.analysis.sorted[drawIndex + 1];
   const profile = gameProfile(draw.numbers);
   const repeated = previous ? intersectionCount(draw.numbers, previous.numbers) : null;
-  const primes = draw.numbers.filter((number) => [2, 3, 5, 7, 11, 13, 17, 19, 23].includes(number)).length;
-  const fibonacci = draw.numbers.filter((number) => [1, 2, 3, 5, 8, 13, 21].includes(number)).length;
-  const multiplesOfThree = draw.numbers.filter((number) => number % 3 === 0).length;
-  const borderNumbers = draw.numbers.filter((number) => (
-    number <= 5 || number >= 21 || number % 5 === 1 || number % 5 === 0
-  )).length;
+  const selectedNumbers = new Set(draw.numbers);
+  const repeatedNumbers = new Set(previous
+    ? draw.numbers.filter((number) => previous.numbers.includes(number))
+    : []);
   const sumDifference = profile.sum - state.analysis.avgSum;
   const sumReading = Math.abs(sumDifference) < 5
     ? "proxima da media historica"
     : `${Math.abs(sumDifference).toFixed(1)} ${sumDifference > 0 ? "acima" : "abaixo"} da media`;
 
   container.innerHTML = `
-    <div class="draw-overview">
-      <div>
-        <strong>Concurso ${draw.contest}</strong>
-        <small>${draw.weekday || ""} · ${draw.date}</small>
+    <section class="lottery-slip">
+      <div class="slip-header">
+        <div>
+          <span class="slip-brand">LOTOFACIL</span>
+          <strong>Concurso ${draw.contest}</strong>
+          <small>${draw.weekday || ""} | ${draw.date}</small>
+        </div>
+        <span class="slip-count">15 dezenas</span>
       </div>
-      <div class="numbers">${draw.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
-    </div>
+      <div class="slip-board">
+        ${NUMBERS.map((number, index) => `
+          <span
+            class="slip-number ${selectedNumbers.has(number) ? "is-drawn" : ""} ${repeatedNumbers.has(number) ? "is-repeated" : ""}"
+            style="--number-order:${index}"
+          >${formatNumber(number)}</span>
+        `).join("")}
+      </div>
+      <div class="slip-legend">
+        <span><i class="legend-drawn"></i>Sorteado</span>
+        <span><i class="legend-repeated"></i>Repetiu do anterior</span>
+      </div>
+    </section>
     <div class="draw-metrics">
-      <div><strong>${profile.sum}</strong><small>Soma · ${sumReading}</small></div>
+      <div><strong>${profile.sum}</strong><small>Soma | ${sumReading}</small></div>
       <div><strong>${profile.odd} / ${profile.even}</strong><small>Impares / pares</small></div>
       <div><strong>${profile.low} / ${profile.high}</strong><small>Baixos (1-13) / altos (14-25)</small></div>
       <div><strong>${repeated ?? "-"}</strong><small>Repetidos do concurso anterior</small></div>
-      <div><strong>${profile.sequence}</strong><small>Maior sequencia consecutiva</small></div>
-      <div><strong>${profile.rows.join(" · ")}</strong><small>Distribuicao nas linhas</small></div>
-      <div><strong>${profile.cols.join(" · ")}</strong><small>Distribuicao nas colunas</small></div>
-      <div><strong>${draw.numbers[0]} a ${draw.numbers.at(-1)}</strong><small>Menor e maior numero</small></div>
-      <div><strong>${primes}</strong><small>Numeros primos</small></div>
-      <div><strong>${fibonacci}</strong><small>Numeros Fibonacci</small></div>
-      <div><strong>${multiplesOfThree}</strong><small>Multiplos de 3</small></div>
-      <div><strong>${borderNumbers} / ${15 - borderNumbers}</strong><small>Moldura / miolo do volante</small></div>
     </div>
   `;
+
+  $("#drawOlder").disabled = drawIndex >= state.analysis.sorted.length - 1;
+  $("#drawNewer").disabled = drawIndex <= 0;
+}
+
+function moveDrawSelection(offset) {
+  const selector = $("#drawSelector");
+  const currentIndex = state.analysis.sorted.findIndex((draw) => draw.contest === Number(selector.value));
+  const nextIndex = Math.max(0, Math.min(state.analysis.sorted.length - 1, currentIndex + offset));
+  selector.value = state.analysis.sorted[nextIndex].contest;
+  renderDrawAnalyzer();
 }
 
 function renderRanking() {
@@ -1389,6 +1405,8 @@ $("#cloudLogin").addEventListener("click", loginCloud);
 $("#cloudLogout").addEventListener("click", logoutCloud);
 $("#forceUpdate").addEventListener("click", forceUpdate);
 $("#drawSelector").addEventListener("change", renderDrawAnalyzer);
+$("#drawOlder").addEventListener("click", () => moveDrawSelection(1));
+$("#drawNewer").addEventListener("click", () => moveDrawSelection(-1));
 installButtons().forEach((button) => button.addEventListener("click", installApp));
 
 setupPwa();

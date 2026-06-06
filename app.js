@@ -1194,16 +1194,50 @@ async function forceUpdate() {
   button.textContent = "Atualizando...";
 
   try {
-    const response = await fetch("/api/update", { method: "POST" });
-    if (!response.ok) {
-      throw new Error("Atualizacao direta indisponivel neste ambiente.");
+    if (!isSupabaseReady()) throw new Error("Supabase ainda nao configurado.");
+    if (!state.supabaseSession?.access_token) {
+      throw new Error("Entre na sua conta na secao Nuvem pessoal antes de atualizar.");
     }
+    if (!await ensureCloudSession()) {
+      throw new Error("Sua sessao expirou. Entre novamente na sua conta.");
+    }
+
+    const config = supabaseConfig();
+    const response = await fetch(`${config.url}/functions/v1/update-lotofacil`, {
+      method: "POST",
+      headers: {
+        apikey: config.anonKey,
+        Authorization: `Bearer ${state.supabaseSession.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
     const payload = await response.json();
-    if (!payload.ok) throw new Error(payload.message || "Nao foi possivel atualizar.");
-    await loadData();
-    showToast("Base atualizada agora.");
+    if (!response.ok || !payload.ok) throw new Error(payload.message || "Nao foi possivel atualizar.");
+
+    const latest = {
+      contest: payload.contest,
+      weekday: payload.weekday,
+      date: formatDrawDate(payload.date),
+      numbers: payload.numbers,
+    };
+    const results = [
+      latest,
+      ...state.data.results.filter((draw) => draw.contest !== latest.contest),
+    ].sort((a, b) => b.contest - a.contest);
+    state.data = {
+      ...state.data,
+      source: "Supabase / API oficial da CAIXA",
+      updated_at: payload.updatedAt,
+      total_contests: results.length,
+      latest_contest: results[0].contest,
+      oldest_contest: results.at(-1).contest,
+      results,
+    };
+    refreshAnalysis();
+    showToast(`Concurso ${payload.contest} atualizado pelo celular.`);
   } catch (error) {
-    showToast("Para forcar no online, rode no computador: npm run sync");
+    showToast(error.message || "Nao foi possivel atualizar agora.");
   } finally {
     button.disabled = false;
     button.textContent = originalText;

@@ -194,6 +194,30 @@ Para testar manualmente o mesmo fluxo:
 scripts\sync-github.bat
 ```
 
+## Atualizar pelo celular
+
+O botao `Atualizar` pode buscar o concurso mais recente sem depender do notebook. Para isso, publique a Edge Function preparada em:
+
+```text
+supabase/functions/update-lotofacil/index.ts
+```
+
+No painel do Supabase:
+
+1. Abra `Edge Functions`.
+2. Clique em `Deploy a new function` e use o editor.
+3. Defina o nome como `update-lotofacil`.
+4. Substitua o codigo pelo conteudo de `supabase/functions/update-lotofacil/index.ts`.
+5. Publique mantendo a verificacao de JWT ativada.
+
+Depois, no celular:
+
+1. Abra o Gerador Lotofacil e entre na sua conta em `Nuvem pessoal`.
+2. Toque em `Atualizar`.
+3. A funcao consulta a API oficial da CAIXA, salva o concurso no Supabase e atualiza a tela.
+
+A chave secreta fica protegida dentro do Supabase. Ela nunca e enviada ao navegador ou ao celular.
+
 ## Estrategia recomendada
 
 Para pouco recurso, use `1 jogo do dia`, 15 numeros e perfil `Equilibrado`.

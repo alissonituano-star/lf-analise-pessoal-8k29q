@@ -832,6 +832,36 @@ function renderHistory() {
   $("#history").innerHTML = entries.slice(0, 12).map((entry) => {
     const draw = byContest[entry.targetContest];
     const hits = draw ? intersectionCount(entry.numbers, draw.numbers) : null;
+    const playedNumbers = new Set(entry.numbers);
+    const drawnNumbers = new Set(draw?.numbers || []);
+    const checkBoard = draw ? `
+      <details class="check-mode">
+        <summary>Conferir jogo</summary>
+        <div class="check-heading">
+          <strong>${hits} acertos</strong>
+          <small>Resultado do concurso ${entry.targetContest}</small>
+        </div>
+        <div class="check-board">
+          ${NUMBERS.map((number) => {
+            const played = playedNumbers.has(number);
+            const drawn = drawnNumbers.has(number);
+            const status = played && drawn
+              ? "is-hit"
+              : played
+                ? "is-miss"
+                : drawn
+                  ? "is-drawn-only"
+                  : "";
+            return `<span class="check-number ${status}">${formatNumber(number)}</span>`;
+          }).join("")}
+        </div>
+        <div class="check-legend">
+          <span><i class="check-hit"></i>Acertou</span>
+          <span><i class="check-miss"></i>Jogou, nao saiu</span>
+          <span><i class="check-drawn"></i>Saiu, nao jogou</span>
+        </div>
+      </details>
+    ` : "";
     return `
       <article class="history-item">
         <div>
@@ -840,6 +870,7 @@ function renderHistory() {
         </div>
         <div class="numbers">${entry.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
         <div class="history-result">${hits === null ? "aguardando resultado" : `${hits} acertos`}</div>
+        ${checkBoard}
       </article>
     `;
   }).join("");

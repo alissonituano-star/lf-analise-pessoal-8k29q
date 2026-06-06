@@ -1,15 +1,20 @@
 :root {
   color-scheme: light;
-  --bg: #f5f6f2;
+  --bg: #f2f6f4;
   --panel: #ffffff;
-  --ink: #17211c;
-  --muted: #66736c;
-  --line: #dbe4de;
-  --brand: #176b4d;
-  --brand-dark: #0f4f3d;
-  --accent: #d79922;
-  --blue: #2864ad;
-  --soft: #f7faf8;
+  --ink: #17251f;
+  --muted: #607269;
+  --line: #d5e1da;
+  --brand: #167052;
+  --brand-dark: #0d503d;
+  --brand-soft: #e7f4ed;
+  --accent: #c99024;
+  --accent-soft: #fff3d8;
+  --danger: #b85757;
+  --danger-soft: #faeaea;
+  --neutral: #8a9a91;
+  --soft: #f6faf8;
+  --shadow: rgba(23, 52, 40, 0.08);
 }
 
 * {
@@ -31,7 +36,7 @@ body {
   gap: 24px;
   padding: 18px clamp(16px, 4vw, 48px);
   border-bottom: 1px solid var(--line);
-  background: #ffffff;
+  background: var(--panel);
 }
 
 .brand-lockup {
@@ -98,7 +103,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 18px;
-  box-shadow: 0 1px 2px rgba(23, 33, 28, 0.04);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .wide {
@@ -183,8 +188,16 @@ button {
 input,
 select {
   padding: 0 12px;
-  background: #fbfdfb;
+  background: var(--soft);
   color: var(--ink);
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(201, 144, 36, 0.32);
+  outline-offset: 2px;
 }
 
 button {
@@ -212,11 +225,11 @@ button:disabled {
   padding: 0 14px;
   border-color: var(--accent);
   background: var(--accent);
-  color: #1c1608;
+  color: #2f240d;
 }
 
 .install-button:hover {
-  background: #c8891f;
+  background: #b8801f;
 }
 
 .install-button.full {
@@ -245,14 +258,14 @@ button:disabled {
 }
 
 .ghost:hover {
-  background: #edf7f1;
+  background: var(--brand-soft);
 }
 
 .note {
   margin: 16px 0 0;
   padding: 12px;
   border-left: 3px solid var(--accent);
-  background: #fff9eb;
+  background: var(--accent-soft);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
@@ -333,7 +346,7 @@ button:disabled {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfb;
+  background: var(--soft);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
@@ -383,9 +396,9 @@ button:disabled {
 
 .lottery-slip {
   overflow: hidden;
-  border: 1px solid #cbd8cf;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f8fbf5;
+  background: var(--soft);
 }
 
 .slip-header {
@@ -413,7 +426,7 @@ button:disabled {
 }
 
 .slip-header small {
-  color: #dceee5;
+  color: #dff1e8;
   font-size: 12px;
 }
 
@@ -439,10 +452,10 @@ button:disabled {
   place-items: center;
   aspect-ratio: 1;
   min-width: 0;
-  border: 1px solid #c8d5cc;
+  border: 1px solid var(--line);
   border-radius: 50%;
   background: #ffffff;
-  color: #87958d;
+  color: var(--neutral);
   font-size: 15px;
   font-weight: 800;
 }
@@ -451,7 +464,7 @@ button:disabled {
   border-color: var(--brand);
   background: var(--brand);
   color: #ffffff;
-  box-shadow: 0 3px 8px rgba(23, 107, 77, 0.22);
+  box-shadow: 0 3px 8px rgba(22, 112, 82, 0.22);
   animation: mark-number 320ms ease both;
   animation-delay: calc(var(--number-order) * 12ms);
 }
@@ -465,7 +478,7 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  border-top: 1px dashed #cbd8cf;
+  border-top: 1px dashed var(--line);
   padding: 10px 16px;
   color: var(--muted);
   font-size: 11px;
@@ -542,6 +555,10 @@ button:disabled {
   border-left: 4px solid var(--brand);
 }
 
+.draw-analyzer {
+  border-left: 4px solid var(--accent);
+}
+
 .history-settings {
   margin: 14px 0;
   border: 1px solid var(--line);
@@ -572,7 +589,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
-  background: #fbfdfb;
+  background: var(--soft);
 }
 
 .daily-card > div:first-child {
@@ -715,7 +732,8 @@ button:disabled {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfdfb;
+  background: var(--soft);
+  box-shadow: 0 2px 7px var(--shadow);
 }
 
 .game-slip-header {
@@ -735,7 +753,7 @@ button:disabled {
 
 .game-slip-header span,
 .game-slip-header b {
-  color: #dceee5;
+  color: #dff1e8;
   font-size: 9px;
   font-weight: 800;
 }
@@ -763,10 +781,10 @@ button:disabled {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  border: 1px solid #ccd8d0;
+  border: 1px solid var(--line);
   border-radius: 50%;
   background: #ffffff;
-  color: #9aa69f;
+  color: var(--neutral);
   font-size: 11px;
   font-weight: 800;
 }
@@ -775,7 +793,7 @@ button:disabled {
   border-color: var(--brand);
   background: var(--brand);
   color: #ffffff;
-  box-shadow: 0 2px 5px rgba(23, 107, 77, 0.18);
+  box-shadow: 0 2px 5px rgba(22, 112, 82, 0.18);
 }
 
 .game-reasons {
@@ -802,7 +820,7 @@ button:disabled {
   width: max-content;
   border-radius: 999px;
   padding: 4px 7px;
-  background: #e8f5ed;
+  background: var(--brand-soft);
   color: var(--brand-dark);
   font-size: 10px;
   text-transform: uppercase;
@@ -833,7 +851,7 @@ button:disabled {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #edf7f1;
+  background: var(--brand-soft);
   color: var(--brand-dark);
   font-size: 13px;
   font-weight: 800;
@@ -849,9 +867,9 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 13px 14px;
-  background: #17211c;
+  background: var(--ink);
   color: #ffffff;
-  box-shadow: 0 12px 28px rgba(23, 33, 28, 0.22);
+  box-shadow: 0 12px 28px rgba(23, 52, 40, 0.24);
   font-size: 14px;
   line-height: 1.4;
 }
@@ -958,7 +976,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
-  background: #fbfdfb;
+  background: var(--soft);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
@@ -979,7 +997,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
-  background: #fbfdfb;
+  background: var(--soft);
 }
 
 .strategy-table strong,
@@ -1015,7 +1033,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
-  background: #fbfdfb;
+  background: var(--soft);
 }
 
 .cloud-sync strong,
@@ -1035,12 +1053,12 @@ button:disabled {
 }
 
 .cloud-sync small[data-type="warn"] {
-  color: #9a650f;
+  color: #8a5d10;
   font-weight: 700;
 }
 
 .cloud-sync small[data-type="error"] {
-  color: #a52820;
+  color: var(--danger);
   font-weight: 700;
 }
 
@@ -1085,7 +1103,7 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 12px;
-  background: #fbfdfb;
+  background: var(--soft);
 }
 
 .history-item strong,
@@ -1103,6 +1121,12 @@ button:disabled {
   color: var(--brand-dark);
   font-weight: 800;
   text-align: right;
+}
+
+.history-item:has(.check-mode) .history-result {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--brand-soft);
 }
 
 .check-mode {
@@ -1141,17 +1165,17 @@ button:disabled {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 14px;
-  background: var(--soft);
+  background: #f1f6f3;
 }
 
 .check-number {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  border: 1px solid #d6dfd9;
+  border: 1px solid var(--line);
   border-radius: 50%;
   background: #ffffff;
-  color: #a1ada6;
+  color: var(--neutral);
   font-size: 12px;
   font-weight: 800;
 }
@@ -1163,15 +1187,15 @@ button:disabled {
 }
 
 .check-number.is-miss {
-  border-color: #d28e8e;
-  background: #fae8e8;
-  color: #8c3535;
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: #823c3c;
 }
 
 .check-number.is-drawn-only {
   border-color: var(--accent);
-  background: #fff4d7;
-  color: #76510d;
+  background: var(--accent-soft);
+  color: #73500f;
 }
 
 .check-legend {
@@ -1202,7 +1226,7 @@ button:disabled {
 }
 
 .check-miss {
-  background: #d28e8e;
+  background: var(--danger);
 }
 
 .check-drawn {
@@ -1246,7 +1270,7 @@ button:disabled {
 
 @media (max-width: 760px) {
   body {
-    background: #ffffff;
+    background: var(--panel);
   }
 
   .app-header {
@@ -1255,7 +1279,7 @@ button:disabled {
     z-index: 10;
     gap: 10px;
     padding: 12px 14px;
-    box-shadow: 0 2px 12px rgba(23, 33, 28, 0.08);
+    box-shadow: 0 2px 12px var(--shadow);
   }
 
   .brand-lockup {

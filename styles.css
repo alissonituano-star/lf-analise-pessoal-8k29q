@@ -1295,6 +1295,29 @@ button:disabled {
   text-align: right;
 }
 
+.history-actions {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.delete-game {
+  width: auto;
+  min-height: 28px;
+  margin: 0;
+  border-color: transparent;
+  padding: 0 8px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 11px;
+}
+
+.delete-game:hover {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: #823c3c;
+}
+
 .history-item:has(.check-mode) .history-result {
   border-radius: 999px;
   padding: 5px 8px;
@@ -1746,6 +1769,12 @@ button:disabled {
 
   .history-result {
     text-align: left;
+  }
+
+  .history-actions {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: start;
   }
 
   .backtest {

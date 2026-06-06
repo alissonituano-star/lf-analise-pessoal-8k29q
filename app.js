@@ -1,6 +1,7 @@
 const NUMBERS = Array.from({ length: 25 }, (_, index) => index + 1);
 const STORAGE_KEY = "lotofacil-played-games-v1";
 const SUPABASE_SESSION_STORAGE = "lotofacil-supabase-session-v1";
+const PENDING_DELETIONS_STORAGE = "lotofacil-pending-deletions-v1";
 const MAX_HISTORY_ENTRIES = 2000;
 const state = {
   data: null,
@@ -32,6 +33,18 @@ function getPlayedGames() {
 
 function setPlayedGames(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY_ENTRIES)));
+}
+
+function getPendingDeletions() {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_DELETIONS_STORAGE) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function setPendingDeletions(keys) {
+  localStorage.setItem(PENDING_DELETIONS_STORAGE, JSON.stringify([...new Set(keys)]));
 }
 
 function supabaseConfig() {
@@ -848,6 +861,7 @@ function savePlayedGames() {
       cost: estimatedGameCost(game.numbers.length),
       targetContest,
       createdAt: now,
+      pendingSync: true,
     });
     existing.add(key);
     added += 1;
@@ -922,7 +936,10 @@ function renderHistory() {
           <small>${formatUpdatedAt(entry.createdAt)} | ${entry.mode}</small>
         </div>
         <div class="numbers">${entry.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
-        <div class="history-result">${hits === null ? "aguardando resultado" : `${hits} acertos`}</div>
+        <div class="history-actions">
+          <div class="history-result">${hits === null ? "aguardando resultado" : `${hits} acertos`}</div>
+          <button class="delete-game" type="button" data-delete-game="${entry.key}">Excluir</button>
+        </div>
         ${checkBoard}
       </article>
     `;
@@ -1127,7 +1144,8 @@ async function importHistory(event) {
     const imported = Array.isArray(parsed) ? parsed : parsed.entries;
     if (!Array.isArray(imported)) throw new Error("Arquivo invalido.");
     const current = getPlayedGames();
-    const byKey = new Map([...imported, ...current].filter((entry) => entry?.key).map((entry) => [entry.key, entry]));
+    const pendingImported = imported.map((entry) => ({ ...entry, pendingSync: true }));
+    const byKey = new Map([...pendingImported, ...current].filter((entry) => entry?.key).map((entry) => [entry.key, entry]));
     setPlayedGames([...byKey.values()]);
     renderHistory();
     showToast("Diario importado.");
@@ -1213,6 +1231,7 @@ function entryFromCloud(row) {
     cost: row.cost ?? null,
     targetContest: row.target_contest,
     createdAt: row.played_at,
+    pendingSync: false,
   };
 }
 
@@ -1250,15 +1269,50 @@ async function pushCloudEntries(entries) {
   return response.json();
 }
 
-function mergeHistory(localEntries, cloudEntries) {
-  const byKey = new Map();
-  [...cloudEntries.map(entryFromCloud), ...localEntries].forEach((entry) => {
-    if (!entry?.key) return;
-    byKey.set(entry.key, entry);
-  });
-  return [...byKey.values()]
+async function deleteCloudEntries(keys) {
+  if (!keys.length) return;
+  const config = supabaseConfig();
+  const userId = state.supabaseSession.user.id;
+
+  for (const key of keys) {
+    const url = `${config.url}/rest/v1/${config.table}?user_id=eq.${encodeURIComponent(userId)}&game_key=eq.${encodeURIComponent(key)}`;
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: supabaseHeaders(),
+    });
+    if (!response.ok) throw await supabaseError(response, "Nao consegui excluir o jogo da nuvem");
+  }
+}
+
+function cloudHistory(cloudEntries) {
+  return cloudEntries
+    .map(entryFromCloud)
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, MAX_HISTORY_ENTRIES);
+}
+
+async function deletePlayedGame(key) {
+  if (!confirm("Excluir este jogo do aparelho e da nuvem?")) return;
+  const entries = getPlayedGames().filter((entry) => entry.key !== key);
+  const pendingDeletions = [...getPendingDeletions(), key];
+  setPlayedGames(entries);
+  setPendingDeletions(pendingDeletions);
+  generateGames();
+
+  if (!state.supabaseSession?.access_token) {
+    showToast("Jogo excluido do aparelho. A nuvem sera atualizada no proximo login.");
+    return;
+  }
+
+  try {
+    const hasValidSession = await ensureCloudSession();
+    if (!hasValidSession) throw new Error("Sessao expirada.");
+    await deleteCloudEntries([key]);
+    setPendingDeletions(getPendingDeletions().filter((item) => item !== key));
+    showToast("Jogo excluido do aparelho e da nuvem.");
+  } catch {
+    showToast("Jogo excluido do aparelho. A exclusao da nuvem ficou pendente.");
+  }
 }
 
 async function syncCloudHistory(silent = false) {
@@ -1288,11 +1342,13 @@ async function syncCloudHistory(silent = false) {
 
   try {
     const localEntries = getPlayedGames();
-    await pushCloudEntries(localEntries);
+    const pendingDeletions = getPendingDeletions();
+    await deleteCloudEntries(pendingDeletions);
+    setPendingDeletions([]);
+    await pushCloudEntries(localEntries.filter((entry) => entry.pendingSync === true));
     const cloudEntries = await fetchCloudEntries();
-    const merged = mergeHistory(localEntries, cloudEntries);
+    const merged = cloudHistory(cloudEntries);
     setPlayedGames(merged);
-    await pushCloudEntries(merged);
     generateGames();
     setCloudStatus(`Nuvem sincronizada: ${merged.length} jogo(s) no diario.`, "ok");
     if (!silent) showToast("Diario sincronizado com Supabase.");
@@ -1627,6 +1683,10 @@ $("#clearHistory").addEventListener("click", clearHistory);
 $("#dashboardTab").addEventListener("click", () => selectHistoryTab("dashboard"));
 $("#historyTab").addEventListener("click", () => selectHistoryTab("history"));
 $("#dashboardPeriod").addEventListener("change", () => renderHistoryDashboard(getPlayedGames()));
+$("#history").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-delete-game]");
+  if (button) deletePlayedGame(button.dataset.deleteGame);
+});
 $("#syncCloud").addEventListener("click", () => syncCloudHistory());
 $("#cloudLogin").addEventListener("click", loginCloud);
 $("#cloudLogout").addEventListener("click", logoutCloud);

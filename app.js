@@ -509,8 +509,61 @@ function renderSummary() {
   $("#metricUpdated").textContent = `Atualizado em: ${formatUpdatedAt(data.updated_at)}`;
   $("#updateMode").textContent = isLocalServer()
     ? "Neste modo, o botao Atualizar baixa os resultados agora."
-    : "Online: use npm run sync no computador para atualizar e enviar ao GitHub.";
+    : "Online: entre na Nuvem pessoal e use o botao Atualizar pelo celular.";
   $("#status").textContent = `Base: ${results.length} concursos. Atualizado: ${formatUpdatedAt(data.updated_at)}`;
+}
+
+function renderDrawAnalyzer() {
+  const selector = $("#drawSelector");
+  const container = $("#drawAnalysis");
+  if (!selector || !container || !state.analysis?.sorted?.length) return;
+
+  const selectedContest = Number(selector.value) || state.analysis.sorted[0].contest;
+  selector.innerHTML = state.analysis.sorted.map((draw) => `
+    <option value="${draw.contest}" ${draw.contest === selectedContest ? "selected" : ""}>
+      ${draw.contest} - ${draw.date}
+    </option>
+  `).join("");
+
+  const drawIndex = state.analysis.sorted.findIndex((draw) => draw.contest === selectedContest);
+  const draw = state.analysis.sorted[drawIndex] || state.analysis.sorted[0];
+  const previous = state.analysis.sorted[drawIndex + 1];
+  const profile = gameProfile(draw.numbers);
+  const repeated = previous ? intersectionCount(draw.numbers, previous.numbers) : null;
+  const primes = draw.numbers.filter((number) => [2, 3, 5, 7, 11, 13, 17, 19, 23].includes(number)).length;
+  const fibonacci = draw.numbers.filter((number) => [1, 2, 3, 5, 8, 13, 21].includes(number)).length;
+  const multiplesOfThree = draw.numbers.filter((number) => number % 3 === 0).length;
+  const borderNumbers = draw.numbers.filter((number) => (
+    number <= 5 || number >= 21 || number % 5 === 1 || number % 5 === 0
+  )).length;
+  const sumDifference = profile.sum - state.analysis.avgSum;
+  const sumReading = Math.abs(sumDifference) < 5
+    ? "proxima da media historica"
+    : `${Math.abs(sumDifference).toFixed(1)} ${sumDifference > 0 ? "acima" : "abaixo"} da media`;
+
+  container.innerHTML = `
+    <div class="draw-overview">
+      <div>
+        <strong>Concurso ${draw.contest}</strong>
+        <small>${draw.weekday || ""} · ${draw.date}</small>
+      </div>
+      <div class="numbers">${draw.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
+    </div>
+    <div class="draw-metrics">
+      <div><strong>${profile.sum}</strong><small>Soma · ${sumReading}</small></div>
+      <div><strong>${profile.odd} / ${profile.even}</strong><small>Impares / pares</small></div>
+      <div><strong>${profile.low} / ${profile.high}</strong><small>Baixos (1-13) / altos (14-25)</small></div>
+      <div><strong>${repeated ?? "-"}</strong><small>Repetidos do concurso anterior</small></div>
+      <div><strong>${profile.sequence}</strong><small>Maior sequencia consecutiva</small></div>
+      <div><strong>${profile.rows.join(" · ")}</strong><small>Distribuicao nas linhas</small></div>
+      <div><strong>${profile.cols.join(" · ")}</strong><small>Distribuicao nas colunas</small></div>
+      <div><strong>${draw.numbers[0]} a ${draw.numbers.at(-1)}</strong><small>Menor e maior numero</small></div>
+      <div><strong>${primes}</strong><small>Numeros primos</small></div>
+      <div><strong>${fibonacci}</strong><small>Numeros Fibonacci</small></div>
+      <div><strong>${multiplesOfThree}</strong><small>Multiplos de 3</small></div>
+      <div><strong>${borderNumbers} / ${15 - borderNumbers}</strong><small>Moldura / miolo do volante</small></div>
+    </div>
+  `;
 }
 
 function renderRanking() {
@@ -1313,6 +1366,7 @@ function setupPwa() {
 function refreshAnalysis() {
   state.analysis = analyze(state.data.results, Number($("#recentWindow").value));
   renderSummary();
+  renderDrawAnalyzer();
   renderRanking();
   renderPairs();
   generateGames();
@@ -1357,6 +1411,7 @@ $("#syncCloud").addEventListener("click", syncCloudHistory);
 $("#cloudLogin").addEventListener("click", loginCloud);
 $("#cloudLogout").addEventListener("click", logoutCloud);
 $("#forceUpdate").addEventListener("click", forceUpdate);
+$("#drawSelector").addEventListener("change", renderDrawAnalyzer);
 installButtons().forEach((button) => button.addEventListener("click", installApp));
 
 setupPwa();

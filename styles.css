@@ -352,6 +352,66 @@ button:disabled {
   border-left: 4px solid var(--brand);
 }
 
+.draw-filter {
+  width: min(240px, 100%);
+  margin: 0;
+}
+
+.draw-analysis {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.draw-overview {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) 1fr;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+
+.draw-overview > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.draw-overview strong {
+  font-size: 17px;
+}
+
+.draw-overview small {
+  color: var(--muted);
+}
+
+.draw-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.draw-metrics div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 76px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px;
+  background: var(--soft);
+}
+
+.draw-metrics strong {
+  font-size: 19px;
+}
+
+.draw-metrics small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .decision-summary {
   color: var(--ink);
   font-weight: 700;
@@ -1001,6 +1061,30 @@ button:disabled {
   .section-title,
   .section-heading {
     align-items: center;
+  }
+
+  .draw-analyzer .section-heading,
+  .draw-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .draw-analyzer .section-heading {
+    display: grid;
+  }
+
+  .draw-filter {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .draw-metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .draw-metrics div {
+    min-height: 72px;
+    padding: 10px;
   }
 
   .button-row {

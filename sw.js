@@ -1,4 +1,4 @@
-const CACHE_NAME = "gerador-lotofacil-v18";
+const CACHE_NAME = "gerador-lotofacil-v19";
 const APP_FILES = [
   "./",
   "./index.html",

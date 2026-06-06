@@ -412,6 +412,29 @@ button:disabled {
   line-height: 1.35;
 }
 
+.draw-metrics div:nth-child(n+5) {
+  display: none;
+}
+
+.recommendations {
+  border-left: 4px solid var(--brand);
+}
+
+.history-settings {
+  margin: 14px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: var(--soft);
+}
+
+.history-settings summary {
+  cursor: pointer;
+  color: var(--brand-dark);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .decision-summary {
   color: var(--ink);
   font-weight: 700;
@@ -567,7 +590,7 @@ button:disabled {
 
 .game {
   display: grid;
-  grid-template-columns: minmax(96px, 120px) 1fr minmax(160px, 190px);
+  grid-template-columns: minmax(70px, 90px) 1fr;
   align-items: center;
   gap: 14px;
   padding: 14px;

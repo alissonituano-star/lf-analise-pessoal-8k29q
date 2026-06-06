@@ -456,10 +456,7 @@ function generateClosureGames(count, strategy, playedKeys) {
 function finishGeneration() {
   updateStrategyNote();
   renderDecisionSummary();
-  renderDailyGame();
   renderGames();
-  renderCoverage();
-  renderBacktest();
   renderHistory();
 }
 
@@ -495,17 +492,14 @@ function renderDecisionSummary() {
   const text = overBudget
     ? `Custo acima do limite diario. Reduza quantidade ou numeros antes de jogar. Estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`
     : `Hoje o sistema recomenda ${modeLabel} com ${size} numeros no perfil ${strategyLabel($("#strategy").value)}. Custo estimado: R$ ${estimated.toFixed(2).replace(".", ",")}.`;
-  $("#decisionSummary").textContent = text;
+  if ($("#decisionSummary")) $("#decisionSummary").textContent = text;
   $("#decisionSummaryMobile").textContent = text;
 }
 
 function renderSummary() {
   const data = state.data;
   const results = state.analysis.sorted;
-  $("#metricContests").textContent = data.total_contests || results.length;
   $("#metricLatest").textContent = data.latest_contest || results[0].contest;
-  $("#metricAvgSum").textContent = Math.round(state.analysis.avgSum);
-  $("#metricRange").innerHTML = `<b>${results.at(-1).date}</b><em>ate</em><b>${results[0].date}</b>`;
   $("#metricUpdated").textContent = `Atualizado em: ${formatUpdatedAt(data.updated_at)}`;
   $("#updateMode").textContent = isLocalServer()
     ? "Neste modo, o botao Atualizar baixa os resultados agora."
@@ -592,20 +586,8 @@ function renderPairs() {
 function renderGames() {
   $("#games").innerHTML = state.games.map((game) => `
     <article class="game">
-      <div class="game-title">
-        Jogo ${game.index}
-        <span class="game-meta">${game.numbers.length} numeros</span>
-      </div>
+      <div class="game-title">Jogo ${game.index}</div>
       <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
-      <div class="game-score">
-        <strong>Nota estatistica: ${game.score.toFixed(2)}</strong>
-        <span>${describeGame(game.numbers)}</span>
-        <small>${gameIssues(game.numbers, state.analysis).length ? `Alertas: ${gameIssues(game.numbers, state.analysis).join(", ")}` : "Sem alertas do filtro anti-jogo-fraco"}</small>
-      </div>
-      <div class="game-explain">
-        <strong>Por que este jogo?</strong>
-        <ul>${explainGame(game.numbers, state.analysis).map((item) => `<li>${item}</li>`).join("")}</ul>
-      </div>
     </article>
   `).join("");
 }
@@ -1367,8 +1349,6 @@ function refreshAnalysis() {
   state.analysis = analyze(state.data.results, Number($("#recentWindow").value));
   renderSummary();
   renderDrawAnalyzer();
-  renderRanking();
-  renderPairs();
   generateGames();
   renderHistory();
 }
@@ -1398,11 +1378,8 @@ $("#gameSize").addEventListener("change", generateGames);
 $("#generationMode").addEventListener("change", generateGames);
 $("#lastRepeatRange").addEventListener("change", generateGames);
 $("#dailyBudget").addEventListener("change", updateStrategyNote);
-$("#downloadCsv").addEventListener("click", downloadCsv);
 $("#copyGames").addEventListener("click", copyGames);
 $("#savePlayed").addEventListener("click", savePlayedGames);
-$("#saveDaily").addEventListener("click", saveDailyGame);
-$("#copyDaily").addEventListener("click", copyDailyGame);
 $("#exportHistory").addEventListener("click", exportHistory);
 $("#importHistory").addEventListener("click", importHistoryClick);
 $("#historyFile").addEventListener("change", importHistory);

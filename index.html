@@ -102,46 +102,40 @@
         </details>
       </section>
 
-      <section class="panel wide daily-panel">
-        <div class="section-heading">
-          <div>
-            <p class="kicker">Decisao diaria</p>
-            <h2>Jogo do Dia</h2>
-          </div>
-          <div class="button-row">
-            <button class="ghost action-button" id="saveDaily">Registrar</button>
-            <button class="ghost action-button" id="copyDaily">Copiar</button>
-          </div>
-        </div>
-        <p class="helper decision-summary" id="decisionSummary">Preparando recomendacao do dia.</p>
-        <div id="dailyGame" class="daily-game"></div>
-      </section>
-
       <section class="panel summary">
         <div class="section-heading">
           <div>
             <p class="kicker">Base historica</p>
-            <h2>Resumo dos dados</h2>
+            <h2>Dados atualizados</h2>
           </div>
           <button class="ghost action-button" id="forceUpdate">Atualizar</button>
         </div>
-        <div class="metrics">
-          <div><span id="metricContests">-</span><small>concursos</small></div>
-          <div><span id="metricLatest">-</span><small>ultimo concurso</small></div>
-          <div><span id="metricAvgSum">-</span><small>soma media</small></div>
-          <div class="metric-period"><span id="metricRange">-</span><small>periodo</small></div>
-        </div>
         <div class="update-info">
-          <span id="metricUpdated">Atualizado em: -</span>
+          <span>Ultimo concurso: <b id="metricLatest">-</b></span>
+          <small id="metricUpdated">Atualizado em: -</small>
           <small id="updateMode">No app online, a atualizacao depende do envio da base pelo GitHub.</small>
         </div>
+      </section>
+
+      <section class="panel wide recommendations">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">Recomendacao principal</p>
+            <h2>4 jogos para jogar</h2>
+          </div>
+          <div class="button-row">
+            <button class="ghost action-button" id="savePlayed">Registrar</button>
+            <button class="ghost action-button" id="copyGames">Copiar</button>
+          </div>
+        </div>
+        <div id="games" class="games"></div>
       </section>
 
       <section class="panel wide draw-analyzer">
         <div class="section-heading">
           <div>
-            <p class="kicker">Analise por concurso</p>
-            <h2>Caracteristicas do sorteio</h2>
+            <p class="kicker">Conferir sorteio</p>
+            <h2>Caracteristicas do concurso</h2>
           </div>
           <label class="draw-filter">
             Concurso
@@ -154,100 +148,37 @@
       <section class="panel wide">
         <div class="section-heading">
           <div>
-            <p class="kicker">Sugestao principal</p>
-            <h2>Jogos sugeridos</h2>
-          </div>
-          <div class="button-row">
-            <button class="ghost action-button" id="savePlayed">Registrar</button>
-            <button class="ghost action-button" id="copyGames">Copiar</button>
-          </div>
-        </div>
-        <p class="helper">Os jogos sao ranqueados por equilibrio: frequencia, atraso, soma, pares e distribuicao no volante.</p>
-        <div id="coverage" class="coverage"></div>
-        <div id="games" class="games"></div>
-      </section>
-
-      <section class="panel advice">
-        <div class="section-heading">
-          <div>
-            <p class="kicker">Estrategia</p>
-            <h2>4 jogos por dia</h2>
-          </div>
-        </div>
-        <div class="advice-body">
-          <strong>Matematicamente, tanto faz trocar ou manter os mesmos 4 jogos.</strong>
-          <p>Cada sorteio e independente. Se voce joga 4 combinacoes diferentes de 15 numeros, sua chance para 15 acertos em um concurso e de 4 em 3.268.760, ou cerca de 1 em 817.190.</p>
-          <p>Na pratica, eu recomendo gerar 4 jogos novos todos os dias, mas sem achar que isso aumenta a probabilidade pura. A vantagem e diversificar combinacoes, usar a base atualizada e evitar ficar preso em um jogo ruim de distribuicao.</p>
-        </div>
-      </section>
-
-      <section class="panel wide">
-        <div class="section-title">
-          <div>
-            <p class="kicker">Leitura numero a numero</p>
-            <h2>Ranking dos numeros</h2>
-          </div>
-          <button class="ghost action-button" id="downloadCsv">CSV</button>
-        </div>
-        <p class="helper">Ordenado pela pontuacao combinada. Compare percentual historico, presenca recente e atraso atual.</p>
-        <div id="numberRanking" class="number-grid"></div>
-      </section>
-
-      <section class="panel">
-        <div class="section-heading">
-          <div>
-            <p class="kicker">Combinacoes</p>
-            <h2>Pares fortes</h2>
-          </div>
-        </div>
-        <p class="helper">Pares que mais apareceram juntos no historico.</p>
-        <div id="pairRanking" class="pair-list"></div>
-      </section>
-
-      <section class="panel wide">
-        <div class="section-heading">
-          <div>
-            <p class="kicker">Teste historico</p>
-            <h2>Backtest</h2>
-          </div>
-        </div>
-        <p class="helper">Compara os jogos sugeridos contra os ultimos concursos. Serve para avaliar a estrategia, nao para prever o proximo resultado.</p>
-        <div id="backtest" class="backtest"></div>
-        <div id="strategyBacktest" class="strategy-backtest"></div>
-      </section>
-
-      <section class="panel wide">
-        <div class="section-heading">
-          <div>
             <p class="kicker">Seu uso</p>
             <h2>Diario de jogos</h2>
+          </div>
+        </div>
+        <details class="history-settings">
+          <summary>Sincronizacao e opcoes</summary>
+          <div class="cloud-sync">
+            <div>
+              <strong>Nuvem pessoal</strong>
+              <small id="cloudStatus">Verificando sincronizacao...</small>
+            </div>
+            <label>
+              Email
+              <input id="cloudEmail" type="email" autocomplete="email" placeholder="seu@email.com">
+            </label>
+            <label>
+              Senha
+              <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Senha do Supabase">
+            </label>
+            <div class="button-row">
+              <button class="ghost action-button" id="cloudLogin">Entrar</button>
+              <button class="ghost action-button" id="cloudLogout" hidden>Sair</button>
+              <button class="ghost action-button" id="syncCloud">Sincronizar</button>
+            </div>
           </div>
           <div class="button-row">
             <button class="ghost action-button" id="importHistory">Importar</button>
             <button class="ghost action-button" id="exportHistory">Exportar</button>
             <button class="ghost action-button" id="clearHistory">Limpar</button>
           </div>
-        </div>
-        <p class="helper">Registre o que voce jogou. Quando o concurso estiver na base, o sistema confere os acertos automaticamente.</p>
-        <div class="cloud-sync">
-          <div>
-            <strong>Nuvem pessoal</strong>
-            <small id="cloudStatus">Verificando sincronizacao...</small>
-          </div>
-          <label>
-            Email
-            <input id="cloudEmail" type="email" autocomplete="email" placeholder="seu@email.com">
-          </label>
-          <label>
-            Senha
-            <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Senha do Supabase">
-          </label>
-          <div class="button-row">
-            <button class="ghost action-button" id="cloudLogin">Entrar</button>
-            <button class="ghost action-button" id="cloudLogout" hidden>Sair</button>
-            <button class="ghost action-button" id="syncCloud">Sincronizar</button>
-          </div>
-        </div>
+        </details>
         <div id="historyStats" class="history-stats"></div>
         <div id="history" class="history"></div>
         <input id="historyFile" type="file" accept="application/json,.json,.csv,text/csv" hidden>

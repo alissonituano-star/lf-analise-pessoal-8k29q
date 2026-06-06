@@ -32,6 +32,83 @@ function weekday(date: string) {
   return labels[new Date(`${date}T12:00:00Z`).getUTCDay()];
 }
 
+type LatestDraw = {
+  contest: number;
+  date: string;
+  numbers: number[];
+  source: string;
+};
+
+function validateDraw(draw: LatestDraw) {
+  if (
+    !Number.isInteger(draw.contest)
+    || draw.numbers.length !== 15
+    || new Set(draw.numbers).size !== 15
+    || draw.numbers.some((number) => number < 1 || number > 25)
+  ) {
+    throw new Error("O resultado recebido esta incompleto.");
+  }
+  return draw;
+}
+
+async function fetchFromCaixa(): Promise<LatestDraw> {
+  const response = await fetch(
+    "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
+    {
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+        Origin: "https://loterias.caixa.gov.br",
+        Referer: "https://loterias.caixa.gov.br/",
+        "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36",
+      },
+    },
+  );
+  if (!response.ok) throw new Error(`CAIXA HTTP ${response.status}`);
+
+  const draw = await response.json();
+  return validateDraw({
+    contest: draw.numero,
+    date: draw.dataApuracao,
+    numbers: (draw.listaDezenas || []).map(Number).sort((a: number, b: number) => a - b),
+    source: "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
+  });
+}
+
+async function fetchFromLotorama(): Promise<LatestDraw> {
+  const source = "https://lotorama.com.br/lotofacil/todos-os-resultados/";
+  const response = await fetch(source, {
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "pt-BR,pt;q=0.9",
+      "User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36",
+    },
+  });
+  if (!response.ok) throw new Error(`Lotorama HTTP ${response.status}`);
+
+  const html = await response.text();
+  const firstCard = html.match(/<div class="resultado-card">([\s\S]*?)(?=<div class="resultado-card">|<div class="pagination|<footer|$)/i)?.[1] || "";
+  const contest = Number(firstCard.match(/Concurso\s+(\d+)/i)?.[1]);
+  const date = firstCard.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] || "";
+  const numbers = [...firstCard.matchAll(/result-number[^>]*>\s*(\d{1,2})\s*</gi)]
+    .map((match) => Number(match[1]))
+    .sort((a, b) => a - b);
+
+  return validateDraw({ contest, date, numbers, source });
+}
+
+async function fetchLatestDraw() {
+  const errors: string[] = [];
+  for (const fetchDraw of [fetchFromCaixa, fetchFromLotorama]) {
+    try {
+      return await fetchDraw();
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : "erro desconhecido");
+    }
+  }
+  throw new Error(`Fontes indisponiveis: ${errors.join(" | ")}`);
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ ok: false, message: "Metodo nao permitido." }, 405);
@@ -54,29 +131,15 @@ Deno.serve(async (request) => {
       return json({ ok: false, message: "Sua sessao expirou. Entre novamente." }, 401);
     }
 
-    const caixaResponse = await fetch(
-      "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
-      { headers: { Accept: "application/json", "User-Agent": "Lotofacil-Pessoal/1.0" } },
-    );
-    if (!caixaResponse.ok) throw new Error(`API da CAIXA respondeu HTTP ${caixaResponse.status}.`);
-
-    const draw = await caixaResponse.json();
-    const numbers = (draw.listaDezenas || [])
-      .map((value: string) => Number(value))
-      .filter((value: number) => value >= 1 && value <= 25)
-      .sort((a: number, b: number) => a - b);
-
-    if (!Number.isInteger(draw.numero) || numbers.length !== 15 || new Set(numbers).size !== 15) {
-      throw new Error("O resultado recebido da CAIXA esta incompleto.");
-    }
-
-    const drawDate = isoDate(draw.dataApuracao);
+    const draw = await fetchLatestDraw();
+    const numbers = draw.numbers;
+    const drawDate = isoDate(draw.date);
     const sum = numbers.reduce((total: number, number: number) => total + number, 0);
     const odd = numbers.filter((number: number) => number % 2 !== 0).length;
     const low = numbers.filter((number: number) => number <= 13).length;
     const updatedAt = new Date().toISOString();
     const row = {
-      contest: draw.numero,
+      contest: draw.contest,
       weekday: weekday(drawDate),
       draw_date: drawDate,
       numbers,
@@ -85,7 +148,7 @@ Deno.serve(async (request) => {
       even_count: numbers.length - odd,
       low_count: low,
       high_count: numbers.length - low,
-      source: "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
+      source: draw.source,
       source_updated_at: updatedAt,
     };
 

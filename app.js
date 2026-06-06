@@ -600,12 +600,24 @@ function renderPairs() {
 }
 
 function renderGames() {
-  $("#games").innerHTML = state.games.map((game) => `
-    <article class="game">
-      <div class="game-title">Jogo ${game.index}</div>
-      <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
-    </article>
-  `).join("");
+  const latest = state.analysis.sorted[0]?.numbers || [];
+  $("#games").innerHTML = state.games.map((game) => {
+    const profile = gameProfile(game.numbers);
+    const repeated = intersectionCount(game.numbers, latest);
+    return `
+      <article class="game">
+        <div class="game-title">Jogo ${game.index}</div>
+        <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
+        <div class="game-reasons">
+          <span><b>${profile.sum}</b> soma</span>
+          <span><b>${profile.odd}/${profile.even}</b> impares/pares</span>
+          <span><b>${profile.low}/${profile.high}</b> baixos/altos</span>
+          <span><b>${repeated}</b> repetidos</span>
+          <strong>Equilibrado</strong>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderDailyGame() {

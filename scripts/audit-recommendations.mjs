@@ -26,6 +26,17 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
 }
 
+function standardDeviation(values) {
+  const mean = average(values);
+  return Math.sqrt(average(values.map((value) => (value - mean) ** 2)));
+}
+
+function combinationCount(n, k) {
+  let result = 1;
+  for (let index = 1; index <= k; index += 1) result = result * (n - index + 1) / index;
+  return Math.round(result);
+}
+
 function gameKey(numbers) {
   return [...numbers].sort((a, b) => a - b).map((number) => String(number).padStart(2, "0")).join("-");
 }
@@ -69,9 +80,11 @@ function analyze(results, recentWindow) {
   const delay = Object.fromEntries(NUMBERS.map((number) => [number, null]));
   const pairCounts = new Map();
   const sums = [];
+  const repeats = [];
 
   sorted.forEach((draw, drawIndex) => {
     sums.push(draw.numbers.reduce((sum, number) => sum + number, 0));
+    if (sorted[drawIndex + 1]) repeats.push(intersectionCount(draw.numbers, sorted[drawIndex + 1].numbers));
     draw.numbers.forEach((number) => {
       frequency[number] += 1;
       if (delay[number] === null) delay[number] = drawIndex;
@@ -104,7 +117,14 @@ function analyze(results, recentWindow) {
     };
   }).sort((a, b) => b.score - a.score);
 
-  return { sorted, ranking, avgSum: average(sums) };
+  return {
+    sorted,
+    ranking,
+    avgSum: average(sums),
+    stdSum: standardDeviation(sums),
+    avgRepeat: average(repeats),
+    stdRepeat: standardDeviation(repeats),
+  };
 }
 
 function selectedLastRepeatRange(size) {
@@ -139,29 +159,37 @@ function gameIssues(numbers, analysis) {
   return issues;
 }
 
-function scoreGame(numbers, analysis) {
-  const rankByNumber = Object.fromEntries(analysis.ranking.map((item) => [item.number, item]));
+function qualityScore(numbers, analysis) {
   const profile = gameProfile(numbers);
-  const raw = numbers.reduce((total, number) => {
-    const item = rankByNumber[number];
-    return total + item.score * 0.55 + item.delay * 0.15 / 100 + item.frequency * 0.15 / 1000 + item.recentFrequency * 0.15 / 100;
-  }, 0);
+  const repeatLatest = intersectionCount(numbers, analysis.sorted[0]?.numbers || []);
+  const sumDeviation = Math.abs(profile.sum - analysis.avgSum) / Math.max(analysis.stdSum, 1);
+  const repeatDeviation = Math.abs(repeatLatest - analysis.avgRepeat) / Math.max(analysis.stdRepeat, 1);
+  const parityExcess = Math.max(0, Math.abs(profile.odd - numbers.length / 2) - 0.5);
+  const lowExcess = Math.max(0, Math.abs(profile.low - numbers.length / 2) - 0.5);
+  const rowPenalty = profile.rows.filter((value) => value === 0 || value === 5).length * 5;
+  const colPenalty = profile.cols.filter((value) => value === 0 || value === 5).length * 4;
+  const sequencePenalty = Math.max(0, profile.sequence - 5) * 4;
+  const similarityPenalty = Math.max(0, maxHistoricalSimilarity(numbers, analysis) - 13) * 5;
+  const penalty = sumDeviation * 7 + repeatDeviation * 3 + parityExcess * 7 + lowExcess * 6
+    + rowPenalty + colPenalty + sequencePenalty + similarityPenalty;
+  return Math.max(0, Math.min(100, Math.round(100 - penalty)));
+}
+
+function scoreGame(numbers, analysis) {
+  const profile = gameProfile(numbers);
   const sumPenalty = Math.abs(profile.sum - analysis.avgSum) / 30;
   const oddPenalty = Math.abs(profile.odd - numbers.length / 2) * 0.18;
   const lowPenalty = Math.abs(profile.low - numbers.length / 2) * 0.12;
   const rowPenalty = profile.rows.filter((value) => value === 0 || value > 4).length * 0.18;
   const colPenalty = profile.cols.filter((value) => value === 0 || value > 4).length * 0.12;
   const issuePenalty = gameIssues(numbers, analysis).length * 0.45;
-  return raw - sumPenalty - oddPenalty - lowPenalty - rowPenalty - colPenalty - issuePenalty;
+  return qualityScore(numbers, analysis) / 10
+    - sumPenalty * 0.1 - oddPenalty - lowPenalty - rowPenalty - colPenalty - issuePenalty;
 }
 
 function createCandidate(analysis, size) {
-  const pool = analysis.ranking.map((item, index) => {
-    const weight = Math.max(1, Math.round((26 - index) * (1 + item.score)));
-    return Array.from({ length: weight }, () => item.number);
-  }).flat();
   const chosen = new Set();
-  while (chosen.size < size) chosen.add(pool[Math.floor(Math.random() * pool.length)]);
+  while (chosen.size < size) chosen.add(NUMBERS[Math.floor(Math.random() * NUMBERS.length)]);
   const numbers = [...chosen].sort((a, b) => a - b);
   return { numbers, score: scoreGame(numbers, analysis) };
 }
@@ -169,7 +197,7 @@ function createCandidate(analysis, size) {
 function selectDiversifiedGames(candidates, count, size) {
   const pool = [...candidates].sort((a, b) => b.score - a.score);
   const selected = [];
-  const targetOverlap = size <= 15 ? 9 : Math.ceil(size * 0.6);
+  const targetOverlap = size <= 15 ? 8 : Math.ceil(size * 0.55);
   while (selected.length < count && pool.length) {
     const ranked = pool.map((candidate) => {
       const overlaps = selected.map((game) => intersectionCount(candidate.numbers, game.numbers));
@@ -177,8 +205,17 @@ function selectDiversifiedGames(candidates, count, size) {
       const avgOverlap = overlaps.length ? average(overlaps) : 0;
       const covered = new Set(selected.flatMap((game) => game.numbers));
       const newNumbers = candidate.numbers.filter((number) => !covered.has(number)).length;
+      const memberships = Object.fromEntries(NUMBERS.map((number) => [
+        number,
+        selected.filter((game) => game.numbers.includes(number)).length + (candidate.numbers.includes(number) ? 1 : 0),
+      ]));
+      const membershipSpread = Math.max(...Object.values(memberships)) - Math.min(...Object.values(memberships));
       const excessOverlap = Math.max(0, maxOverlap - targetOverlap);
-      return { candidate, adjustedScore: candidate.score - excessOverlap * 0.75 - avgOverlap * 0.05 + newNumbers * 0.12 };
+      return {
+        candidate,
+        adjustedScore: candidate.score - excessOverlap * 0.9 - avgOverlap * 0.08
+          - membershipSpread * 0.12 + newNumbers * 0.45,
+      };
     }).sort((a, b) => b.adjustedScore - a.adjustedScore);
     const best = ranked[0].candidate;
     selected.push(best);
@@ -215,6 +252,7 @@ function audit(games, analysis) {
       index: index + 1,
       numbers: game.numbers,
       score: Number(game.score.toFixed(2)),
+      quality: qualityScore(game.numbers, analysis),
       profile: gameProfile(game.numbers),
       repeatLatest: intersectionCount(game.numbers, latest),
       issues: gameIssues(game.numbers, analysis),
@@ -223,20 +261,45 @@ function audit(games, analysis) {
     coveredNumbers: allNumbers.size,
     maxOverlap: Math.max(...overlaps),
     avgOverlap: Number(average(overlaps).toFixed(2)),
-    backtestBest: Math.max(...hits),
-    backtestAvg: Number(average(hits).toFixed(2)),
-    backtest13Plus: hits.filter((hit) => hit >= 13).length,
+    historicalFitBest: Math.max(...hits),
+    historicalFitAvg: Number(average(hits).toFixed(2)),
+    historicalFit13Plus: hits.filter((hit) => hit >= 13).length,
+    theoretical15Chance: `1 em ${Math.round(combinationCount(25, 15) / games.length).toLocaleString("pt-BR")}`,
   };
 }
 
 const payload = JSON.parse(await readFile(DATA_FILE, "utf8"));
+const invalidDraws = payload.results.filter((draw) => (
+  !Number.isInteger(draw.contest)
+  || draw.numbers.length !== 15
+  || new Set(draw.numbers).size !== 15
+  || draw.numbers.some((number) => number < 1 || number > 25)
+));
 const analysis = analyze(payload.results, 120);
 const games = generatePlan(analysis);
 const report = audit(games, analysis);
+const failures = [];
+if (invalidDraws.length) failures.push(`${invalidDraws.length} concursos invalidos`);
+if (report.uniqueGames !== 4) failures.push("os quatro jogos nao sao unicos");
+if (report.coveredNumbers !== 25) failures.push(`cobertura incompleta: ${report.coveredNumbers}/25`);
+if (report.maxOverlap > 9) failures.push(`sobreposicao excessiva: ${report.maxOverlap}`);
+if (report.games.some((game) => game.issues.length)) failures.push("ha jogos com alertas");
 
 console.log(JSON.stringify({
   contests: payload.total_contests,
   latestContest: payload.latest_contest,
   avgSum: Number(analysis.avgSum.toFixed(2)),
+  stdSum: Number(analysis.stdSum.toFixed(2)),
+  avgRepeat: Number(analysis.avgRepeat.toFixed(2)),
+  invalidDraws: invalidDraws.length,
+  formulaChecks: {
+    theoreticalAverageSum: 195,
+    empiricalAverageSum: Number(analysis.avgSum.toFixed(2)),
+    theoreticalAverageRepeat: 9,
+    empiricalAverageRepeat: Number(analysis.avgRepeat.toFixed(2)),
+  },
+  failures,
   ...report,
 }, null, 2));
+
+if (failures.length) process.exitCode = 1;

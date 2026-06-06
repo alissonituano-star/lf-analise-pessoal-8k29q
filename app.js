@@ -84,6 +84,11 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
 }
 
+function standardDeviation(values) {
+  const mean = average(values);
+  return Math.sqrt(average(values.map((value) => (value - mean) ** 2)));
+}
+
 function formatUpdatedAt(value) {
   if (!value) return "sem registro";
   const date = new Date(value);
@@ -192,6 +197,29 @@ function isStrongEnough(numbers, analysis) {
   return gameIssues(numbers, analysis).length === 0;
 }
 
+function qualityScore(numbers, analysis) {
+  const profile = gameProfile(numbers);
+  const latest = analysis.sorted[0]?.numbers || [];
+  const repeatLatest = intersectionCount(numbers, latest);
+  const sumDeviation = Math.abs(profile.sum - analysis.avgSum) / Math.max(analysis.stdSum, 1);
+  const repeatDeviation = Math.abs(repeatLatest - analysis.avgRepeat) / Math.max(analysis.stdRepeat, 1);
+  const parityExcess = Math.max(0, Math.abs(profile.odd - numbers.length / 2) - 0.5);
+  const lowExcess = Math.max(0, Math.abs(profile.low - numbers.length / 2) - 0.5);
+  const rowPenalty = profile.rows.filter((value) => value === 0 || value === 5).length * 5;
+  const colPenalty = profile.cols.filter((value) => value === 0 || value === 5).length * 4;
+  const sequencePenalty = Math.max(0, profile.sequence - 5) * 4;
+  const similarityPenalty = Math.max(0, maxHistoricalSimilarity(numbers, analysis) - 13) * 5;
+  const penalty = sumDeviation * 7
+    + repeatDeviation * 3
+    + parityExcess * 7
+    + lowExcess * 6
+    + rowPenalty
+    + colPenalty
+    + sequencePenalty
+    + similarityPenalty;
+  return Math.max(0, Math.min(100, Math.round(100 - penalty)));
+}
+
 function analyze(results, recentWindow) {
   const sorted = [...results].sort((a, b) => b.contest - a.contest);
   const recent = sorted.slice(0, recentWindow);
@@ -201,9 +229,11 @@ function analyze(results, recentWindow) {
   const delay = Object.fromEntries(NUMBERS.map((number) => [number, null]));
   const pairCounts = new Map();
   const sums = [];
+  const repeats = [];
 
   sorted.forEach((draw, drawIndex) => {
     sums.push(draw.numbers.reduce((sum, number) => sum + number, 0));
+    if (sorted[drawIndex + 1]) repeats.push(intersectionCount(draw.numbers, sorted[drawIndex + 1].numbers));
     draw.numbers.forEach((number) => {
       frequency[number] += 1;
       if (delay[number] === null) delay[number] = drawIndex;
@@ -253,6 +283,9 @@ function analyze(results, recentWindow) {
     ranking,
     pairs,
     avgSum: average(sums),
+    stdSum: standardDeviation(sums),
+    avgRepeat: average(repeats),
+    stdRepeat: standardDeviation(repeats),
     minSum: Math.min(...sums),
     maxSum: Math.max(...sums),
   };
@@ -319,11 +352,19 @@ function scoreGame(numbers, analysis, strategy) {
   const colPenalty = profile.cols.filter((value) => value === 0 || value > 4).length * 0.12;
   const issuePenalty = gameIssues(numbers, analysis).length * 0.45;
 
-  return raw - sumPenalty - oddPenalty - lowPenalty - rowPenalty - colPenalty - issuePenalty;
+  const historicalComponent = strategy === "balanced" ? 0 : raw * 0.15;
+  return qualityScore(numbers, analysis) / 10
+    + historicalComponent
+    - sumPenalty * 0.1
+    - oddPenalty
+    - lowPenalty
+    - rowPenalty
+    - colPenalty
+    - issuePenalty;
 }
 
 function createCandidate(analysis, strategy, size) {
-  const pool = analysis.ranking.map((item, index) => {
+  const pool = strategy === "balanced" ? NUMBERS : analysis.ranking.map((item, index) => {
     const weight = Math.max(1, Math.round((26 - index) * (1 + item.score)));
     return Array.from({ length: weight }, () => item.number);
   }).flat();
@@ -388,7 +429,7 @@ function generateGames() {
 function selectDiversifiedGames(candidates, count, size) {
   const pool = [...candidates].sort((a, b) => b.score - a.score);
   const selected = [];
-  const targetOverlap = size <= 15 ? 9 : Math.ceil(size * 0.6);
+  const targetOverlap = size <= 15 ? 8 : Math.ceil(size * 0.55);
 
   while (selected.length < count && pool.length) {
     const ranked = pool
@@ -398,10 +439,19 @@ function selectDiversifiedGames(candidates, count, size) {
         const avgOverlap = overlaps.length ? average(overlaps) : 0;
         const covered = new Set(selected.flatMap((game) => game.numbers));
         const newNumbers = candidate.numbers.filter((number) => !covered.has(number)).length;
+        const memberships = Object.fromEntries(NUMBERS.map((number) => [
+          number,
+          selected.filter((game) => game.numbers.includes(number)).length + (candidate.numbers.includes(number) ? 1 : 0),
+        ]));
+        const membershipSpread = Math.max(...Object.values(memberships)) - Math.min(...Object.values(memberships));
         const excessOverlap = Math.max(0, maxOverlap - targetOverlap);
         return {
           candidate,
-          adjustedScore: candidate.score - excessOverlap * 0.75 - avgOverlap * 0.05 + newNumbers * 0.12,
+          adjustedScore: candidate.score
+            - excessOverlap * 0.9
+            - avgOverlap * 0.08
+            - membershipSpread * 0.12
+            + newNumbers * 0.45,
         };
       })
       .sort((a, b) => b.adjustedScore - a.adjustedScore);
@@ -605,6 +655,7 @@ function renderGames() {
     const profile = gameProfile(game.numbers);
     const repeated = intersectionCount(game.numbers, latest);
     const selectedNumbers = new Set(game.numbers);
+    const quality = qualityScore(game.numbers, state.analysis);
     return `
       <article class="game">
         <div class="game-slip-header">
@@ -612,7 +663,7 @@ function renderGames() {
             <span>APOSTA RECOMENDADA</span>
             <strong>Jogo ${game.index}</strong>
           </div>
-          <b>15 marcadas</b>
+          <b>Nota ${quality}/100</b>
         </div>
         <div class="game-slip-board">
           ${NUMBERS.map((number) => `
@@ -626,7 +677,7 @@ function renderGames() {
           <span><b>${profile.odd}/${profile.even}</b> impares/pares</span>
           <span><b>${profile.low}/${profile.high}</b> baixos/altos</span>
           <span><b>${repeated}</b> repetidos</span>
-          <strong>Equilibrado</strong>
+          <strong>Nota de equilibrio, nao probabilidade</strong>
         </div>
       </article>
     `;
@@ -639,10 +690,11 @@ function renderDailyGame() {
     $("#dailyGame").innerHTML = `<div class="empty-state">Gere um jogo para ver a recomendacao principal.</div>`;
     return;
   }
+  const quality = qualityScore(game.numbers, state.analysis);
   $("#dailyGame").innerHTML = `
     <article class="daily-card">
       <div>
-        <strong>Nota estatistica: ${game.score.toFixed(2)}</strong>
+        <strong>Nota de equilibrio: ${quality}/100</strong>
         <span>${describeGame(game.numbers)}</span>
       </div>
       <div class="numbers">${game.numbers.map((number) => `<span class="mini-ball">${formatNumber(number)}</span>`).join("")}</div>
@@ -789,7 +841,7 @@ function savePlayedGames() {
     entries.unshift({
       key,
       numbers: game.numbers,
-      score: Number(game.score.toFixed(2)),
+      score: qualityScore(game.numbers, state.analysis),
       mode: $("#generationMode").value,
       strategy: $("#strategy").value,
       cost: estimatedGameCost(game.numbers.length),
